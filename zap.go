@@ -2,8 +2,6 @@ package zap
 
 import (
 	"os"
-	"os/signal"
-	"syscall"
 
 	"go.uber.org/zap"
 	_ "go.uber.org/zap"
@@ -58,8 +56,6 @@ func (l *logger) configure(opts ...Option) {
 		logger = logger.Named("[" + l.opts.Service + "]")
 	}
 	l.logger = logger.Sugar()
-
-	go l.flush()
 }
 
 // color .
@@ -145,12 +141,4 @@ func (l *logger) Fatal(v ...interface{}) {
 // Fatalf .
 func (l *logger) Fatalf(format string, params ...interface{}) {
 	l.logger.Fatalf(format, params...)
-}
-
-// flush .
-func (l *logger) flush() {
-	s := make(chan os.Signal)
-	signal.Notify(s, syscall.SIGTERM, syscall.SIGINT)
-	<-s
-	l.logger.Sync()
 }

@@ -9,14 +9,14 @@ import (
 func Test(t *testing.T) {
 	var loop int = 1e4
 
-	logger := New(WithService("zap")) // 1.768725642s
+	Init(WithService("zap")) // 830.113708ms
 
 	var start = time.Now()
 	for i := 0; i < loop; i++ {
-		logger.Debug(now())
-		logger.Info(now())
-		logger.Warn(now())
-		logger.Error(now())
+		Debug(now())
+		Info(now())
+		Warn(now())
+		Error(now())
 	}
 	fmt.Println(time.Since(start))
 

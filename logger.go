@@ -2,8 +2,10 @@ package zap
 
 var base *logger
 
-func init() {
-	base = New(WithSkip(2))
+// Init .
+// default skip 2
+func Init(opts ...Option) {
+	base = New(append([]Option{WithSkip(2)}, opts...)...)
 }
 
 // Trace .
