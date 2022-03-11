@@ -1,6 +1,6 @@
 package logger
 
-var base *logger
+var base *Logger
 
 // Init .
 // default skip 2

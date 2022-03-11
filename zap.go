@@ -9,21 +9,21 @@ import (
 	_ "go.uber.org/zap/zapcore"
 )
 
-// logger .
-type logger struct {
+// Logger .
+type Logger struct {
 	opts   *Options
 	logger *zap.SugaredLogger
 }
 
 // New .
-func New(opts ...Option) *logger {
-	l := new(logger)
+func New(opts ...Option) *Logger {
+	l := new(Logger)
 	l.configure(opts...)
 	return l
 }
 
 // configure .
-func (l *logger) configure(opts ...Option) {
+func (l *Logger) configure(opts ...Option) {
 	var options = defaultOption()
 	for _, opt := range opts {
 		opt(options)
@@ -59,7 +59,7 @@ func (l *logger) configure(opts ...Option) {
 }
 
 // color .
-func (l *logger) color(lv zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+func (l *Logger) color(lv zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
 	var level level
 	switch lv {
 	case zapcore.DebugLevel:
@@ -84,61 +84,61 @@ func (l *logger) color(lv zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
 }
 
 // Trace .
-func (l *logger) Trace(v ...interface{}) {
+func (l *Logger) Trace(v ...interface{}) {
 	// zap does not support trace
 }
 
 // Tracef .
-func (l *logger) Tracef(format string, params ...interface{}) {
+func (l *Logger) Tracef(format string, params ...interface{}) {
 	// zap does not support trace
 }
 
 // Debug .
-func (l *logger) Debug(v ...interface{}) {
+func (l *Logger) Debug(v ...interface{}) {
 	l.logger.Debug(v...)
 }
 
 // Debugf .
-func (l *logger) Debugf(format string, params ...interface{}) {
+func (l *Logger) Debugf(format string, params ...interface{}) {
 	l.logger.Debugf(format, params...)
 }
 
 // Info .
-func (l *logger) Info(v ...interface{}) {
+func (l *Logger) Info(v ...interface{}) {
 	l.logger.Info(v...)
 }
 
 // Infof .
-func (l *logger) Infof(format string, params ...interface{}) {
+func (l *Logger) Infof(format string, params ...interface{}) {
 	l.logger.Infof(format, params...)
 }
 
 // Warn .
-func (l *logger) Warn(v ...interface{}) {
+func (l *Logger) Warn(v ...interface{}) {
 	l.logger.Warn(v...)
 }
 
 // Warnf .
-func (l *logger) Warnf(format string, params ...interface{}) {
+func (l *Logger) Warnf(format string, params ...interface{}) {
 	l.logger.Warnf(format, params...)
 }
 
 // Error .
-func (l *logger) Error(v ...interface{}) {
+func (l *Logger) Error(v ...interface{}) {
 	l.logger.Error(v...)
 }
 
 // Errorf .
-func (l *logger) Errorf(format string, params ...interface{}) {
+func (l *Logger) Errorf(format string, params ...interface{}) {
 	l.logger.Errorf(format, params...)
 }
 
 // Fatal .
-func (l *logger) Fatal(v ...interface{}) {
+func (l *Logger) Fatal(v ...interface{}) {
 	l.logger.Fatal(v...)
 }
 
 // Fatalf .
-func (l *logger) Fatalf(format string, params ...interface{}) {
+func (l *Logger) Fatalf(format string, params ...interface{}) {
 	l.logger.Fatalf(format, params...)
 }
