@@ -2,7 +2,7 @@ module github.com/charlesbases/logger
 
 go 1.17
 
-require go.uber.org/zap v1.20.0
+require go.uber.org/zap v1.21.0
 
 require (
 	go.uber.org/atomic v1.7.0 // indirect

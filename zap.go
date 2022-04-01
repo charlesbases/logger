@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 
 	"go.uber.org/zap"
@@ -39,8 +40,9 @@ func (l *Logger) configure(opts ...Option) {
 	encoder := zapcore.NewConsoleEncoder(cfg)
 
 	// 日志级别
-	level := zap.LevelEnablerFunc(func(level zapcore.Level) bool {
-		return true
+	level := zap.LevelEnablerFunc(func(lv zapcore.Level) bool {
+		var ll = convertZapLevel(lv)
+		return ll >= l.opts.minlevel && ll <= l.opts.maxlevel
 	})
 
 	logger := zap.New(
@@ -53,44 +55,24 @@ func (l *Logger) configure(opts ...Option) {
 	)
 
 	if len(l.opts.Service) != 0 {
-		logger = logger.Named("[" + l.opts.Service + "]")
+		logger = logger.Named(fmt.Sprintf("[%s]", l.opts.Service))
 	}
 	l.logger = logger.Sugar()
 }
 
 // color .
 func (l *Logger) color(lv zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-	var level level
-	switch lv {
-	case zapcore.DebugLevel:
-		level = levelDBG
-	case zapcore.InfoLevel:
-		level = levelINF
-	case zapcore.WarnLevel:
-		level = levelWRN
-	case zapcore.ErrorLevel:
-		level = levelERR
-	case zapcore.DPanicLevel:
-		level = levelFAT
-	case zapcore.PanicLevel:
-		level = levelFAT
-	case zapcore.FatalLevel:
-		level = levelFAT
-	default:
-		level = levelTRC
-	}
-
-	enc.AppendString(level.short())
+	enc.AppendString(convertZapLevel(lv).short())
 }
 
 // Trace .
 func (l *Logger) Trace(v ...interface{}) {
-	// zap does not support trace
+	// l.logger.Info(v...)
 }
 
 // Tracef .
 func (l *Logger) Tracef(format string, params ...interface{}) {
-	// zap does not support trace
+	// l.logger.Infof(format, params...)
 }
 
 // Debug .
