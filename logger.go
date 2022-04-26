@@ -2,9 +2,15 @@ package logger
 
 var base *Logger
 
-// Init .
-// default skip 2
-func Init(opts ...Option) {
+func init() {
+	base = New(WithSkip(2))
+}
+
+// SetDefault .
+func SetDefault(opts ...Option) {
+	if base != nil {
+		base.logger.Sync()
+	}
 	base = New(append([]Option{WithSkip(2)}, opts...)...)
 }
 
@@ -23,7 +29,7 @@ func Debug(v ...interface{}) {
 	base.Debug(v...)
 }
 
-//Debugf .
+// Debugf .
 func Debugf(format string, params ...interface{}) {
 	base.Debugf(format, params...)
 }

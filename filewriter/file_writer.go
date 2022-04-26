@@ -1,4 +1,4 @@
-package logger
+package filewriter
 
 import (
 	"io"
@@ -11,13 +11,20 @@ import (
 	"time"
 )
 
+const (
+	// DefaultMaxRolls 日志保留时间
+	DefaultMaxRolls = 7
+	// DefaultFilePath default file path
+	DefaultFilePath = "./log/log.log"
+)
+
 type fileWriter struct {
 	fileDir    string
 	fileName   string
 	filePath   string
 	filePrefix string
 
-	opts      *fileWriterOptions
+	opts      *Options
 	writer    io.WriteCloser
 	current   *fileInfo
 	fileStack *fileStack
@@ -26,31 +33,41 @@ type fileWriter struct {
 	closing chan struct{}
 }
 
-// fileWriterOptions .
-type fileWriterOptions struct {
-	// 日志文件保留天数
-	ttl int
+// Options .
+type Options struct {
+	// TTL 日志文件保留天数
+	TTL int
+	// FilePath 日志文件路径
+	FilePath string
 }
 
-// defaultFileWriterOptions .
-func defaultFileWriterOptions() *fileWriterOptions {
-	return &fileWriterOptions{
-		ttl: DefaultMaxRolls,
+// defaultOptions .
+func defaultOptions() *Options {
+	return &Options{
+		TTL:      DefaultMaxRolls,
+		FilePath: DefaultFilePath,
 	}
 }
 
-type fileWriterOption func(o *fileWriterOptions)
+type Option func(o *Options)
 
-// FileWriterWithTTL 日志文件保留天数
-func FileWriterWithTTL(ttl int) fileWriterOption {
-	return func(o *fileWriterOptions) {
-		o.ttl = ttl
+// TTL 日志文件保留天数
+func TTL(ttl int) Option {
+	return func(o *Options) {
+		o.TTL = ttl
 	}
 }
 
-// NewFileWriter .
-func NewFileWriter(filepath string, options ...fileWriterOption) *fileWriter {
-	var opts = defaultFileWriterOptions()
+// FilePath .
+func FilePath(fpath string) Option {
+	return func(o *Options) {
+		o.FilePath = fpath
+	}
+}
+
+// New .
+func New(options ...Option) *fileWriter {
+	var opts = defaultOptions()
 	for _, o := range options {
 		o(opts)
 	}
@@ -58,12 +75,12 @@ func NewFileWriter(filepath string, options ...fileWriterOption) *fileWriter {
 	var fw = &fileWriter{
 		opts: opts,
 		fileStack: &fileStack{
-			files: make([]*fileInfo, opts.ttl-1),
-			cap:   opts.ttl - 1,
+			files: make([]*fileInfo, opts.TTL-1),
+			cap:   opts.TTL - 1,
 		},
 	}
 
-	if err := fw.repo(filepath); err != nil {
+	if err := fw.repo(opts.FilePath); err != nil {
 		panic(err)
 	}
 	return fw
@@ -126,7 +143,7 @@ loading:
 		return err
 	}
 
-	current := newFileDate(fw.opts.ttl)
+	current := newFileDate(fw.opts.TTL)
 
 	// 统计历史日志文件
 	if len(files) != 0 {
@@ -142,7 +159,7 @@ loading:
 				// 查看是否为当天日志文件
 				// 如果日期为当天，则追加写入
 				// 如果日期不为当天，修改文件名后缀，当天日志记录在新文件中
-				fileDate := newFileDateWithTime(file.ModTime(), fw.opts.ttl)
+				fileDate := newFileDateWithTime(file.ModTime(), fw.opts.TTL)
 
 				switch {
 				case current.createAt.Equal(fileDate.createAt):
@@ -164,7 +181,7 @@ loading:
 					}
 				}
 			case strings.HasPrefix(file.Name(), fw.filePrefix):
-				fileDate := newFileDateWithStr(strings.TrimPrefix(file.Name(), fw.filePrefix), fw.opts.ttl)
+				fileDate := newFileDateWithStr(strings.TrimPrefix(file.Name(), fw.filePrefix), fw.opts.TTL)
 				if fileDate != nil {
 					filePath := fw.filePathJoin(fw.fileDir, file.Name())
 					switch {
@@ -207,7 +224,7 @@ func (fw *fileWriter) daemon() {
 		select {
 		case <-timer.C:
 			fw.lock.Lock()
-			current := newFileDate(fw.opts.ttl)
+			current := newFileDate(fw.opts.TTL)
 			fw.openCurrentFile(current)
 			fw.lock.Unlock()
 

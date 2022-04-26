@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charlesbases/logger/filewriter"
 	"go.uber.org/zap"
 	_ "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -24,12 +25,12 @@ func New(opts ...Option) *Logger {
 }
 
 // configure .
-func (l *Logger) configure(opts ...Option) {
-	var options = defaultOption()
-	for _, opt := range opts {
-		opt(options)
+func (l *Logger) configure(options ...Option) {
+	var opts = defaultOption()
+	for _, opt := range options {
+		opt(opts)
 	}
-	l.opts = options
+	l.opts = opts
 
 	// 编码器
 	cfg := zap.NewProductionEncoderConfig()
@@ -45,11 +46,16 @@ func (l *Logger) configure(opts ...Option) {
 		return ll >= l.opts.minlevel && ll <= l.opts.maxlevel
 	})
 
+	cores := make([]zapcore.Core, 0)
+	// console
+	cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level))
+	// file-writer
+	if opts.store {
+		cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(filewriter.New(l.opts.FileWriterOptions...)), level))
+	}
+
 	logger := zap.New(
-		zapcore.NewTee(
-			zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level),                                                          // console
-			zapcore.NewCore(encoder, zapcore.AddSync(NewFileWriter(l.opts.FilePath, FileWriterWithTTL(l.opts.MaxRolls))), level), // file-writer
-		),
+		zapcore.NewTee(cores...),
 		zap.AddCaller(),
 		zap.AddCallerSkip(l.opts.Skip),
 	)

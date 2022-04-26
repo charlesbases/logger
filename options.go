@@ -1,26 +1,24 @@
 package logger
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/charlesbases/logger/filewriter"
+)
 
 const (
 	// DefaultSkip .
 	DefaultSkip = 1
-	// DefaultMaxRolls 日志保留时间
-	DefaultMaxRolls = 7
 	// DefaultDateFormat date format
 	DefaultDateFormat = "2006-01-02 15:04:05.000"
-	// DefaultFilePath default file path
-	DefaultFilePath = "./log/log.log"
 )
 
 // Options .
 type Options struct {
 	// Service 服务名
 	Service string
-	// FilePath 日志文件路径
-	FilePath string
-	// MaxRolls 日志保留天数
-	MaxRolls int
+	// FileWriterOption 文件写入配置
+	FileWriterOptions []filewriter.Option
 	// MinLevel 允许的最小日志级别. default: "Trace"
 	MinLevel string
 	// MaxLevel 允许的最大日志级别. default: "Fatal"
@@ -28,6 +26,8 @@ type Options struct {
 	// Skip 跳过的调用者数量. default: DefaultSkip
 	Skip int
 
+	// 是否写入文件
+	store bool
 	// minlevel convert from MinLevel. default: _minlevel
 	minlevel level
 	// maxlevel convert from MaxLevel. default: _maxlevel
@@ -37,10 +37,9 @@ type Options struct {
 // defaultOption .
 func defaultOption() *Options {
 	return &Options{
-		FilePath: DefaultFilePath,
-		MaxRolls: DefaultMaxRolls,
-		Skip:     DefaultSkip,
+		Skip: DefaultSkip,
 
+		store:    false,
 		minlevel: _minlevel,
 		maxlevel: _maxlevel,
 	}
@@ -62,17 +61,11 @@ func WithService(service string) Option {
 	}
 }
 
-// WithFilePath .
-func WithFilePath(filename string) Option {
+// WithFileWriter .
+func WithFileWriter(opts ...filewriter.Option) Option {
 	return func(o *Options) {
-		o.FilePath = filename
-	}
-}
-
-// WithMaxRolls .
-func WithMaxRolls(rolls int) Option {
-	return func(o *Options) {
-		o.MaxRolls = rolls
+		o.store = true
+		o.FileWriterOptions = opts
 	}
 }
 
