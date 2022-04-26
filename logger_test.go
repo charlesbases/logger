@@ -4,7 +4,21 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/charlesbases/logger/filewriter"
 )
+
+func TestMultipleLogger(t *testing.T) {
+	Debug("Base logger")
+
+	SetDefault(WithService("SetDefault"), WithFileWriter(filewriter.FilePath("./log/default.log")))
+	Debug("SetDefault logger")
+
+	newl := New(WithService("NEW"), WithFileWriter(filewriter.FilePath("./log/new.log")))
+	newl.Debug("New logger")
+
+	<-time.After(time.Second * 1)
+}
 
 func TestNewLogger(t *testing.T) {
 	var loop int = 1e4
