@@ -65,7 +65,11 @@ func WithService(service string) Option {
 func WithFileWriter(opts ...filewriter.Option) Option {
 	return func(o *Options) {
 		o.store = true
-		o.FileWriterOptions = opts
+		if o.FileWriterOptions != nil {
+			o.FileWriterOptions = append(o.FileWriterOptions, opts...)
+		} else {
+			o.FileWriterOptions = opts
+		}
 	}
 }
 
