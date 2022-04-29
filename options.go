@@ -1,8 +1,6 @@
 package logger
 
 import (
-	"strings"
-
 	"github.com/charlesbases/logger/filewriter"
 )
 
@@ -40,8 +38,8 @@ func defaultOption() *Options {
 		Skip: DefaultSkip,
 
 		store:    false,
-		minlevel: _minlevel,
-		maxlevel: _maxlevel,
+		minlevel: minlevel,
+		maxlevel: maxlevel,
 	}
 }
 
@@ -76,19 +74,8 @@ func WithFileWriter(opts ...filewriter.Option) Option {
 // WithMinLevel allowed: trace | debug | info | warn | error | fatal
 func WithMinLevel(l string) Option {
 	return func(o *Options) {
-		switch strings.ToLower(l) {
-		case "trace":
-			o.minlevel = levelTrace
-		case "debug":
-			o.minlevel = levelDebug
-		case "info":
-			o.minlevel = levelInfo
-		case "warn":
-			o.minlevel = levelWarn
-		case "error":
-			o.minlevel = levelError
-		case "fatal":
-			o.minlevel = levelFatal
+		if lv := convertString(l); lv != -1 {
+			o.minlevel = lv
 		}
 	}
 }
@@ -96,19 +83,8 @@ func WithMinLevel(l string) Option {
 // WithMaxLevel allowed: trace | debug | info | warn | error | fatal
 func WithMaxLevel(l string) Option {
 	return func(o *Options) {
-		switch strings.ToLower(l) {
-		case "trace":
-			o.maxlevel = levelTrace
-		case "debug":
-			o.maxlevel = levelDebug
-		case "info":
-			o.maxlevel = levelInfo
-		case "warn":
-			o.maxlevel = levelWarn
-		case "error":
-			o.maxlevel = levelError
-		case "fatal":
-			o.maxlevel = levelFatal
+		if lv := convertString(l); lv != -1 {
+			o.maxlevel = lv
 		}
 	}
 }

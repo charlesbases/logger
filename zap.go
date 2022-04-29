@@ -68,7 +68,7 @@ func (l *Logger) configure(options ...Option) {
 
 // color .
 func (l *Logger) color(lv zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(convertZapLevel(lv).short())
+	enc.AppendString(render[convertZapLevel(lv)])
 }
 
 // Trace .
