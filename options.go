@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/charlesbases/logger/filewriter"
+	"io"
 )
 
 const (
@@ -15,8 +15,8 @@ const (
 type Options struct {
 	// Service 服务名
 	Service string
-	// FileWriterOption 文件写入配置
-	FileWriterOptions []filewriter.Option
+	// Writers others output
+	Writers []io.Writer
 	// MinLevel 允许的最小日志级别. default: "Trace"
 	MinLevel string
 	// MaxLevel 允许的最大日志级别. default: "Fatal"
@@ -52,22 +52,21 @@ func WithSkip(skip int) Option {
 	}
 }
 
+// WithWriter .
+func WithWriter(w ...io.Writer) Option {
+	return func(o *Options) {
+		if len(o.Writers) != 0 {
+			o.Writers = append(o.Writers, w...)
+		} else {
+			o.Writers = w
+		}
+	}
+}
+
 // WithService .
 func WithService(service string) Option {
 	return func(o *Options) {
 		o.Service = service
-	}
-}
-
-// WithFileWriter .
-func WithFileWriter(opts ...filewriter.Option) Option {
-	return func(o *Options) {
-		o.store = true
-		if o.FileWriterOptions != nil {
-			o.FileWriterOptions = append(o.FileWriterOptions, opts...)
-		} else {
-			o.FileWriterOptions = opts
-		}
 	}
 }
 

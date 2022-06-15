@@ -11,10 +11,10 @@ import (
 func TestMultipleLogger(t *testing.T) {
 	Debug("Base logger")
 
-	SetDefault(WithService("SetDefault"), WithFileWriter(filewriter.FilePath("./log/default.log")))
+	SetDefault(WithService("SetDefault"), WithWriter(filewriter.New(filewriter.FilePath("./log/default.log"))))
 	Debug("SetDefault logger")
 
-	newl := New(WithService("NEW"), WithFileWriter(filewriter.FilePath("./log/new.log")))
+	newl := New(WithService("NEW"), WithWriter(filewriter.New(filewriter.FilePath("./log/default.log"))))
 	newl.Debug("New logger")
 
 	<-time.After(time.Second * 1)
@@ -23,7 +23,7 @@ func TestMultipleLogger(t *testing.T) {
 func TestNewLogger(t *testing.T) {
 	var loop int = 1e4
 
-	logger := New(WithService("NEW"), WithFileWriter())
+	logger := New(WithService("NEW"), WithWriter())
 
 	var start = time.Now()
 	for i := 0; i < loop; i++ {
@@ -55,7 +55,7 @@ func TestBase(t *testing.T) {
 func TestSetDefault(t *testing.T) {
 	var loop int = 1e4
 
-	SetDefault(WithService("SetDefault"), WithFileWriter())
+	SetDefault(WithService("SetDefault"), WithWriter())
 
 	var start = time.Now()
 	for i := 0; i < loop; i++ {

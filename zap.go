@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/charlesbases/logger/filewriter"
 	"go.uber.org/zap"
 	_ "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -46,12 +45,12 @@ func (l *Logger) configure(options ...Option) {
 		return ll >= l.opts.minlevel && ll <= l.opts.maxlevel
 	})
 
-	cores := make([]zapcore.Core, 0)
+	cores := make([]zapcore.Core, 0, len(opts.Writers)+1)
 	// console
 	cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level))
-	// file-writer
-	if opts.store {
-		cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(filewriter.New(l.opts.FileWriterOptions...)), level))
+	// others-writer
+	for _, w := range opts.Writers {
+		cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(w), level))
 	}
 
 	logger := zap.New(
