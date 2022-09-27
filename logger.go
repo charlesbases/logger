@@ -14,6 +14,11 @@ func SetDefault(opts ...Option) {
 	base = New(append([]Option{WithSkip(2)}, opts...)...)
 }
 
+// GetDefault return the base logger
+func GetDefault() *Logger {
+	return base
+}
+
 // Trace .
 func Trace(v ...interface{}) {
 	base.Trace(v...)
