@@ -1,69 +1,47 @@
 package logger
 
 import (
-	"strings"
-
 	"github.com/charlesbases/colors"
 	"go.uber.org/zap/zapcore"
 )
 
-const (
-	traceLevel level = iota
-	debugLevel
-	infoLevel
-	warnLevel
-	errorLevel
-	fatalLevel
+type Level int8
 
-	minlevel = traceLevel
-	maxlevel = fatalLevel
+const (
+	TraceLevel Level = iota
+	DebugLevel
+	InfoLevel
+	WarnLevel
+	ErrorLevel
+	FatalLevel
+
+	minlevel = TraceLevel
+	maxlevel = FatalLevel
 )
 
-type level int8
-
-var render = map[level]string{
-	traceLevel: colors.WhiteSprint("TRC"),
-	debugLevel: colors.PurpleSprint("DBG"),
-	infoLevel:  colors.GreenSprint("INF"),
-	warnLevel:  colors.BlueSprint("WRN"),
-	errorLevel: colors.RedSprint("ERR"),
-	fatalLevel: colors.RedSprint("FAT"),
+var render = map[Level]string{
+	TraceLevel: colors.WhiteSprint("TRC"),
+	DebugLevel: colors.PurpleSprint("DBG"),
+	InfoLevel:  colors.GreenSprint("INF"),
+	WarnLevel:  colors.BlueSprint("WRN"),
+	ErrorLevel: colors.RedSprint("ERR"),
+	FatalLevel: colors.RedSprint("FAT"),
 }
 
-var convert = map[zapcore.Level]level{
-	zapcore.DebugLevel:  debugLevel,
-	zapcore.InfoLevel:   infoLevel,
-	zapcore.WarnLevel:   warnLevel,
-	zapcore.ErrorLevel:  errorLevel,
-	zapcore.DPanicLevel: fatalLevel,
-	zapcore.PanicLevel:  fatalLevel,
-	zapcore.FatalLevel:  fatalLevel,
+var convert = map[zapcore.Level]Level{
+	zapcore.DebugLevel:  DebugLevel,
+	zapcore.InfoLevel:   InfoLevel,
+	zapcore.WarnLevel:   WarnLevel,
+	zapcore.ErrorLevel:  ErrorLevel,
+	zapcore.DPanicLevel: FatalLevel,
+	zapcore.PanicLevel:  FatalLevel,
+	zapcore.FatalLevel:  FatalLevel,
 }
 
-// convertZapLevel zapcore.Level to level
-func convertZapLevel(lv zapcore.Level) level {
+// convertZapLevel zapcore.Level to Level
+func convertZapLevel(lv zapcore.Level) Level {
 	if l, existing := convert[lv]; existing {
 		return l
 	}
-	return traceLevel
-}
-
-// convertString .
-func convertString(s string) level {
-	switch strings.ToLower(s) {
-	case "trace":
-		return traceLevel
-	case "debug":
-		return debugLevel
-	case "info":
-		return infoLevel
-	case "warn":
-		return warnLevel
-	case "error":
-		return errorLevel
-	case "fatal":
-		return fatalLevel
-	default:
-		return -1
-	}
+	return TraceLevel
 }

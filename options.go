@@ -27,9 +27,9 @@ type Options struct {
 	// 是否写入文件
 	store bool
 	// minlevel convert from MinLevel. default: _minlevel
-	minlevel level
+	minlevel Level
 	// maxlevel convert from MaxLevel. default: _maxlevel
-	maxlevel level
+	maxlevel Level
 }
 
 // defaultOption .
@@ -70,20 +70,16 @@ func WithService(service string) Option {
 	}
 }
 
-// WithMinLevel allowed: trace | debug | info | warn | error | fatal
-func WithMinLevel(l string) Option {
+// WithMinLevel .
+func WithMinLevel(l Level) Option {
 	return func(o *Options) {
-		if lv := convertString(l); lv != -1 {
-			o.minlevel = lv
-		}
+		o.minlevel = l
 	}
 }
 
-// WithMaxLevel allowed: trace | debug | info | warn | error | fatal
-func WithMaxLevel(l string) Option {
+// WithMaxLevel .
+func WithMaxLevel(l Level) Option {
 	return func(o *Options) {
-		if lv := convertString(l); lv != -1 {
-			o.maxlevel = lv
-		}
+		o.maxlevel = l
 	}
 }
