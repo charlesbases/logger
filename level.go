@@ -1,14 +1,16 @@
 package logger
 
 import (
+	"fmt"
+
 	"github.com/charlesbases/colors"
 	"go.uber.org/zap/zapcore"
 )
 
-type Level int8
+type level int8
 
 const (
-	TraceLevel Level = iota
+	TraceLevel level = iota
 	DebugLevel
 	InfoLevel
 	WarnLevel
@@ -19,7 +21,7 @@ const (
 	maxlevel = FatalLevel
 )
 
-var render = map[Level]string{
+var render = map[level]string{
 	TraceLevel: colors.WhiteSprint("TRC"),
 	DebugLevel: colors.PurpleSprint("DBG"),
 	InfoLevel:  colors.GreenSprint("INF"),
@@ -28,7 +30,7 @@ var render = map[Level]string{
 	FatalLevel: colors.RedSprint("FAT"),
 }
 
-var convert = map[zapcore.Level]Level{
+var zap2level = map[zapcore.Level]level{
 	zapcore.DebugLevel:  DebugLevel,
 	zapcore.InfoLevel:   InfoLevel,
 	zapcore.WarnLevel:   WarnLevel,
@@ -38,10 +40,28 @@ var convert = map[zapcore.Level]Level{
 	zapcore.FatalLevel:  FatalLevel,
 }
 
-// convertZapLevel zapcore.Level to Level
-func convertZapLevel(lv zapcore.Level) Level {
-	if l, existing := convert[lv]; existing {
+var string2level = map[string]level{
+	"trace": TraceLevel,
+	"debug": DebugLevel,
+	"info":  InfoLevel,
+	"warn":  WarnLevel,
+	"error": ErrorLevel,
+	"fatal": FatalLevel,
+}
+
+// convertZapLevel convert zapcore.Level to level
+func convertZapLevel(lv zapcore.Level) level {
+	if l, found := zap2level[lv]; found {
 		return l
 	}
+	return TraceLevel
+}
+
+// convertString .
+func convertString(v string) level {
+	if l, found := string2level[v]; found {
+		return l
+	}
+	fmt.Println(fmt.Sprintf(`unknown logger level(%s). use default.`, v))
 	return TraceLevel
 }

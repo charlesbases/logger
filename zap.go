@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"fmt"
 	"os"
 
 	"go.uber.org/zap"
@@ -12,72 +11,93 @@ import (
 
 // Logger .
 type Logger struct {
-	opts   *Options
+	zopts  *zapoptions
 	logger *zap.SugaredLogger
+}
+
+// zapoptions .
+type zapoptions struct {
+	skip    int
+	console zapcore.Core
+}
+
+// warp .
+func warp(name string) string {
+	if len(name) != 0 {
+		return "[" + name + "]"
+	}
+	return name
 }
 
 // New .
 func New(opts ...Option) *Logger {
-	l := new(Logger)
-	l.configure(opts...)
-	return l
-}
-
-// configure .
-func (l *Logger) configure(options ...Option) {
-	var opts = defaultOption()
-	for _, opt := range options {
-		opt(opts)
+	var options = defaultOption()
+	for _, opt := range opts {
+		opt(options)
 	}
-	l.opts = opts
 
 	// 编码器
 	cfg := zap.NewProductionEncoderConfig()
-	cfg.EncodeTime = zapcore.TimeEncoderOfLayout("[" + DefaultDateFormat + "]")
-	cfg.EncodeLevel = l.color
+	cfg.EncodeTime = zapcore.TimeEncoderOfLayout(warp(DefaultDateFormat))
+	cfg.EncodeLevel = func(level zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
+		encoder.AppendString(render[convertZapLevel(level)])
+	}
 	cfg.EncodeCaller = zapcore.ShortCallerEncoder
 	cfg.ConsoleSeparator = " "
 	encoder := zapcore.NewConsoleEncoder(cfg)
 
 	// 日志级别
 	level := zap.LevelEnablerFunc(func(lv zapcore.Level) bool {
-		var ll = convertZapLevel(lv)
-		return ll >= l.opts.minlevel && ll <= l.opts.maxlevel
+		var l = convertZapLevel(lv)
+		return l >= options.minlevel && l <= options.maxlevel
 	})
 
-	cores := make([]zapcore.Core, 0, len(opts.Writers)+1)
-	// console
-	cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level))
-	// others-writer
-	for _, w := range opts.Writers {
-		cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(w), level))
+	var core zapcore.Core
+
+	// output-console
+	console := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level)
+
+	// output-writer
+	if len(options.Writers) != 0 {
+		cores := []zapcore.Core{console}
+		for _, w := range options.Writers {
+			cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(w), level))
+		}
+		core = zapcore.NewTee(cores...)
+	} else {
+		core = console
 	}
 
-	logger := zap.New(
-		zapcore.NewTee(cores...),
-		zap.AddCaller(),
-		zap.AddCallerSkip(l.opts.Skip),
-	)
-
-	if len(l.opts.Service) != 0 {
-		logger = logger.Named(fmt.Sprintf("[%s]", l.opts.Service))
+	return &Logger{
+		zopts: &zapoptions{
+			skip:    options.Skip,
+			console: console,
+		},
+		logger: zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.Skip)).Sugar().Named(warp(options.Service)),
 	}
-	l.logger = logger.Sugar()
 }
 
-// color .
-func (l *Logger) color(lv zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(render[convertZapLevel(lv)])
+// Name .
+func (l *Logger) Name(v string) *Logger {
+	return &Logger{
+		zopts:  l.zopts,
+		logger: zap.New(l.zopts.console, zap.AddCaller(), zap.AddCallerSkip(l.zopts.skip-1)).Sugar().Named(warp(v)),
+	}
+}
+
+// Flush .
+func (l *Logger) Flush() {
+	l.logger.Sync()
 }
 
 // Trace .
 func (l *Logger) Trace(v ...interface{}) {
-	// l.logger.Info(v...)
+	l.logger.Info(v...)
 }
 
 // Tracef .
 func (l *Logger) Tracef(format string, params ...interface{}) {
-	// l.logger.Infof(format, params...)
+	l.logger.Infof(format, params...)
 }
 
 // Debug .

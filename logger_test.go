@@ -11,19 +11,19 @@ import (
 func TestMultipleLogger(t *testing.T) {
 	Debug("Base logger")
 
-	SetDefault(WithService("SetDefault"), WithWriter(filewriter.New(filewriter.FilePath("./log/default.log"))))
+	SetDefault(Service("SetDefault"), Writer(filewriter.New(filewriter.FilePath("./log/default.log"))))
 	Debug("SetDefault logger")
 
-	newl := New(WithService("NEW"), WithWriter(filewriter.New(filewriter.FilePath("./log/default.log"))))
+	newl := New(Service("NEW"), Writer(filewriter.New(filewriter.FilePath("./log/default.log"))))
 	newl.Debug("New logger")
 
-	<-time.After(time.Second * 1)
+	newl.Flush()
 }
 
 func TestNewLogger(t *testing.T) {
 	var loop int = 1e4
 
-	logger := New(WithService("NEW"), WithWriter())
+	logger := New(Service("NEW"), Writer())
 
 	var start = time.Now()
 	for i := 0; i < loop; i++ {
@@ -55,7 +55,7 @@ func TestBase(t *testing.T) {
 func TestSetDefault(t *testing.T) {
 	var loop int = 1e4
 
-	SetDefault(WithService("SetDefault"), WithWriter())
+	SetDefault(Service("SetDefault"), Writer())
 
 	var start = time.Now()
 	for i := 0; i < loop; i++ {
@@ -66,7 +66,30 @@ func TestSetDefault(t *testing.T) {
 	}
 	fmt.Println(time.Since(start))
 
-	<-time.After(time.Second * 1)
+	Flush()
+}
+
+func Test(t *testing.T) {
+	a := New(Service("A"))
+	a.Debugf("A: %p", base)
+
+	{
+		b := Name("B")
+		b.Debugf("B: %p", b)
+	}
+
+	{
+		var loop int = 1e4
+
+		var start = time.Now()
+		for i := 0; i < loop; i++ {
+			b := Name("B")
+			b.Debugf("B: %p", b)
+		}
+		fmt.Println(time.Since(start))
+	}
+
+	<-time.NewTicker(time.Second).C
 }
 
 // now .

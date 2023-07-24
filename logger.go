@@ -3,20 +3,25 @@ package logger
 var base *Logger
 
 func init() {
-	base = New(WithSkip(2))
+	base = New(Skip(2))
 }
 
 // SetDefault .
 func SetDefault(opts ...Option) {
 	if base != nil {
-		base.logger.Sync()
+		base.Flush()
 	}
-	base = New(append([]Option{WithSkip(2)}, opts...)...)
+	base = New(append(opts, Skip(2))...)
 }
 
-// GetDefault return the base logger
-func GetDefault() *Logger {
-	return base
+// Flush .
+func Flush() {
+	base.Flush()
+}
+
+// Name .
+func Name(v string) *Logger {
+	return base.Name(v)
 }
 
 // Trace .

@@ -27,9 +27,9 @@ type Options struct {
 	// 是否写入文件
 	store bool
 	// minlevel convert from MinLevel. default: _minlevel
-	minlevel Level
+	minlevel level
 	// maxlevel convert from MaxLevel. default: _maxlevel
-	maxlevel Level
+	maxlevel level
 }
 
 // defaultOption .
@@ -45,15 +45,15 @@ func defaultOption() *Options {
 
 type Option func(o *Options)
 
-// WithSkip .
-func WithSkip(skip int) Option {
+// Skip .
+func Skip(skip int) Option {
 	return func(o *Options) {
 		o.Skip = skip
 	}
 }
 
-// WithWriter .
-func WithWriter(w ...io.Writer) Option {
+// Writer .
+func Writer(w ...io.Writer) Option {
 	return func(o *Options) {
 		if len(o.Writers) != 0 {
 			o.Writers = append(o.Writers, w...)
@@ -63,23 +63,23 @@ func WithWriter(w ...io.Writer) Option {
 	}
 }
 
-// WithService .
-func WithService(service string) Option {
+// Service .
+func Service(service string) Option {
 	return func(o *Options) {
 		o.Service = service
 	}
 }
 
-// WithMinLevel .
-func WithMinLevel(l Level) Option {
+// MinLevel .
+func MinLevel(v string) Option {
 	return func(o *Options) {
-		o.minlevel = l
+		o.minlevel = convertString(v)
 	}
 }
 
-// WithMaxLevel .
-func WithMaxLevel(l Level) Option {
+// MaxLevel .
+func MaxLevel(v string) Option {
 	return func(o *Options) {
-		o.maxlevel = l
+		o.maxlevel = convertString(v)
 	}
 }
