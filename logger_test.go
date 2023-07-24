@@ -74,7 +74,7 @@ func Test(t *testing.T) {
 	a.Debugf("A: %p", base)
 
 	{
-		b := Name("B")
+		b := Named("B")
 		b.Debugf("B: %p", b)
 	}
 
@@ -83,7 +83,7 @@ func Test(t *testing.T) {
 
 		var start = time.Now()
 		for i := 0; i < loop; i++ {
-			b := Name("B")
+			b := Named("B")
 			b.Debugf("B: %p", b)
 		}
 		fmt.Println(time.Since(start))

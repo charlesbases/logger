@@ -77,11 +77,16 @@ func New(opts ...Option) *Logger {
 	}
 }
 
-// Name .
-func (l *Logger) Name(v string) *Logger {
+// Named .
+func (l *Logger) Named(name string, opts ...Option) *Logger {
+	var options = new(Options)
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	return &Logger{
 		zopts:  l.zopts,
-		logger: zap.New(l.zopts.console, zap.AddCaller(), zap.AddCallerSkip(l.zopts.skip-1)).Sugar().Named(warp(v)),
+		logger: zap.New(l.zopts.console, zap.AddCaller(), zap.AddCallerSkip(l.zopts.skip-1+options.Skip)).Sugar().Named(warp(name)),
 	}
 }
 

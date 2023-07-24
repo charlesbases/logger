@@ -19,9 +19,9 @@ func Flush() {
 	base.Flush()
 }
 
-// Name .
-func Name(v string) *Logger {
-	return base.Name(v)
+// Named .
+func Named(name string, opts ...Option) *Logger {
+	return base.Named(name, opts...)
 }
 
 // Trace .
