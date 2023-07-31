@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/charlesbases/colors v1.0.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.24.0
 )
 
 require (
