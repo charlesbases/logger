@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// defaultDateLayou 日志前缀
 const defaultDateLayou = "2006-01-02"
 
 // fileDate .

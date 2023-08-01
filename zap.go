@@ -4,21 +4,14 @@ import (
 	"os"
 
 	"go.uber.org/zap"
-	_ "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	_ "go.uber.org/zap/zapcore"
 )
 
-// Logger .
-type Logger struct {
-	zopts  *zapoptions
-	logger *zap.SugaredLogger
-}
-
-// zapoptions .
-type zapoptions struct {
-	skip    int
-	console zapcore.Core
+// logger .
+type logger struct {
+	skip int
+	core zapcore.Core
+	base *zap.SugaredLogger
 }
 
 // warp .
@@ -30,21 +23,28 @@ func warp(name string) string {
 }
 
 // New .
-func New(opts ...Option) *Logger {
-	var options = defaultOption()
+func New(opts ...func(o *Options)) *logger {
+	var options = defaultOptions()
 	for _, opt := range opts {
 		opt(options)
 	}
 
+	if len(options.MaxLevel) != 0 {
+		options.maxlevel = convertString(options.MaxLevel)
+	}
+	if len(options.MinLevel) != 0 {
+		options.minlevel = convertString(options.MinLevel)
+	}
+
 	// 编码器
-	cfg := zap.NewProductionEncoderConfig()
-	cfg.EncodeTime = zapcore.TimeEncoderOfLayout(warp(DefaultDateFormat))
-	cfg.EncodeLevel = func(level zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
+	encodercfg := zap.NewProductionEncoderConfig()
+	encodercfg.EncodeTime = zapcore.TimeEncoderOfLayout(warp(defaultDateFormat))
+	encodercfg.EncodeLevel = func(level zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
 		encoder.AppendString(render[convertZapLevel(level)])
 	}
-	cfg.EncodeCaller = zapcore.ShortCallerEncoder
-	cfg.ConsoleSeparator = " "
-	encoder := zapcore.NewConsoleEncoder(cfg)
+	encodercfg.EncodeCaller = zapcore.ShortCallerEncoder
+	encodercfg.ConsoleSeparator = " "
+	encoder := zapcore.NewConsoleEncoder(encodercfg)
 
 	// 日志级别
 	level := zap.LevelEnablerFunc(func(lv zapcore.Level) bool {
@@ -52,105 +52,96 @@ func New(opts ...Option) *Logger {
 		return l >= options.minlevel && l <= options.maxlevel
 	})
 
-	var core zapcore.Core
-
 	// output-console
-	console := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level)
+	core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level)
 
 	// output-writer
-	if len(options.Writers) != 0 {
-		cores := []zapcore.Core{console}
-		for _, w := range options.Writers {
-			cores = append(cores, zapcore.NewCore(encoder, zapcore.AddSync(w), level))
-		}
-		core = zapcore.NewTee(cores...)
-	} else {
-		core = console
+	if options.Writer != nil {
+		core = zapcore.NewTee([]zapcore.Core{core, zapcore.NewCore(encoder, zapcore.AddSync(options.Writer), level)}...)
 	}
 
-	return &Logger{
-		zopts: &zapoptions{
-			skip:    options.Skip,
-			console: console,
-		},
-		logger: zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.Skip)).Sugar().Named(warp(options.Service)),
+	return &logger{
+		skip: options.Skip,
+		core: core,
+		base: zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.Skip+options.baseSkip)).Sugar().Named(warp(options.Name)),
 	}
 }
 
 // Named .
-func (l *Logger) Named(name string, opts ...Option) *Logger {
+func (log *logger) Named(name string, opts ...func(o *Options)) *logger {
 	var options = new(Options)
 	for _, opt := range opts {
 		opt(options)
 	}
 
-	return &Logger{
-		zopts:  l.zopts,
-		logger: zap.New(l.zopts.console, zap.AddCaller(), zap.AddCallerSkip(l.zopts.skip-1+options.Skip)).Sugar().Named(warp(name)),
+	return &logger{
+		skip: log.skip,
+		core: log.core,
+		base: zap.New(log.core, zap.AddCaller(), zap.AddCallerSkip(log.skip+options.Skip)).Sugar().Named(warp(name)),
 	}
 }
 
 // Flush .
-func (l *Logger) Flush() {
-	l.logger.Sync()
+func (log *logger) Flush() {
+	log.base.Sync()
 }
 
 // Trace .
-func (l *Logger) Trace(v ...interface{}) {
-	l.logger.Info(v...)
+func (log *logger) Trace(v ...interface{}) {
+	log.base.Info(v...)
 }
 
 // Tracef .
-func (l *Logger) Tracef(format string, params ...interface{}) {
-	l.logger.Infof(format, params...)
+func (log *logger) Tracef(format string, params ...interface{}) {
+	log.base.Infof(format, params...)
 }
 
 // Debug .
-func (l *Logger) Debug(v ...interface{}) {
-	l.logger.Debug(v...)
+func (log *logger) Debug(v ...interface{}) {
+	log.base.Debug(v...)
 }
 
 // Debugf .
-func (l *Logger) Debugf(format string, params ...interface{}) {
-	l.logger.Debugf(format, params...)
+func (log *logger) Debugf(format string, params ...interface{}) {
+	log.base.Debugf(format, params...)
 }
 
 // Info .
-func (l *Logger) Info(v ...interface{}) {
-	l.logger.Info(v...)
+func (log *logger) Info(v ...interface{}) {
+	log.base.Info(v...)
 }
 
 // Infof .
-func (l *Logger) Infof(format string, params ...interface{}) {
-	l.logger.Infof(format, params...)
+func (log *logger) Infof(format string, params ...interface{}) {
+	log.base.Infof(format, params...)
 }
 
 // Warn .
-func (l *Logger) Warn(v ...interface{}) {
-	l.logger.Warn(v...)
+func (log *logger) Warn(v ...interface{}) {
+	log.base.Warn(v...)
 }
 
 // Warnf .
-func (l *Logger) Warnf(format string, params ...interface{}) {
-	l.logger.Warnf(format, params...)
+func (log *logger) Warnf(format string, params ...interface{}) {
+	log.base.Warnf(format, params...)
 }
 
 // Error .
-func (l *Logger) Error(v ...interface{}) {
-	l.logger.Error(v...)
+func (log *logger) Error(v ...interface{}) {
+	log.base.Error(v...)
 }
 
 // Errorf .
-func (l *Logger) Errorf(format string, params ...interface{}) {
-	l.logger.Errorf(format, params...)
+func (log *logger) Errorf(format string, params ...interface{}) {
+	log.base.Errorf(format, params...)
 }
 
 // Fatal .
-func (l *Logger) Fatal(v ...interface{}) {
-	l.logger.Fatal(v...)
+func (log *logger) Fatal(v ...interface{}) {
+	log.base.Fatal(v...)
 }
 
 // Fatalf .
-func (l *Logger) Fatalf(format string, params ...interface{}) {
-	l.logger.Fatalf(format, params...)
+func (log *logger) Fatalf(format string, params ...interface{}) {
+	log.base.Fatalf(format, params...)
 }

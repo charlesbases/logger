@@ -1,17 +1,20 @@
 package logger
 
-var base *Logger
+var base *logger
+
+// baseSkip 因为 base 对 logger 再封装了一层，所以 defaultCallerSkip + 1
+var baseSkip = func(o *Options) { o.baseSkip = 1 }
 
 func init() {
-	base = New(Skip(2))
+	base = New(baseSkip)
 }
 
 // SetDefault .
-func SetDefault(opts ...Option) {
+func SetDefault(opts ...func(o *Options)) {
 	if base != nil {
 		base.Flush()
 	}
-	base = New(append(opts, Skip(2))...)
+	base = New(append(opts, baseSkip)...)
 }
 
 // Flush .
@@ -20,7 +23,7 @@ func Flush() {
 }
 
 // Named .
-func Named(name string, opts ...Option) *Logger {
+func Named(name string, opts ...func(o *Options)) *logger {
 	return base.Named(name, opts...)
 }
 

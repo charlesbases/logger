@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	// DefaultMaxRolls 日志保留时间
-	DefaultMaxRolls = 7
-	// DefaultFilePath default file path
-	DefaultFilePath = "./log/log.log"
+	// defaultMaxRolls 日志保留时间
+	defaultMaxRolls = 7
+	// defaultOutputPath default file path
+	defaultOutputPath = "./log/log.log"
 )
 
 type fileWriter struct {
@@ -24,81 +24,46 @@ type fileWriter struct {
 	filePath   string
 	filePrefix string
 
-	opts      *Options
+	opts      *options
 	writer    io.WriteCloser
 	current   *fileInfo
 	fileStack *fileStack
 
+	// lock zap 的日志输出流是线程安全的，此处的 lock 是防止零点时刻进行日志备份时，正确写入新的日志文件
 	lock    sync.Mutex
 	closing chan struct{}
 }
 
-// Options .
-type Options struct {
-	// TTL 日志文件保留天数
-	TTL int
-	// FilePath 日志文件路径
-	FilePath string
+// options .
+type options struct {
+	// maxrolls 日志文件保留天数
+	maxrolls int
+	// output 日志文件路径
+	output string
+}
+
+type option func(o *options)
+
+// MaxRolls .
+func MaxRolls(days int) option {
+	return func(o *options) {
+		o.maxrolls = days
+	}
+}
+
+// OutputPath .
+func OutputPath(file string) option {
+	return func(o *options) {
+		o.output = file
+	}
 }
 
 // defaultOptions .
-func defaultOptions() *Options {
-	return &Options{
-		TTL:      DefaultMaxRolls,
-		FilePath: DefaultFilePath,
+func defaultOptions() *options {
+	return &options{
+		maxrolls: defaultMaxRolls,
+		output:   defaultOutputPath,
 	}
-}
-
-type Option func(o *Options)
-
-// TTL 日志文件保留天数
-func TTL(ttl int) Option {
-	return func(o *Options) {
-		o.TTL = ttl
-	}
-}
-
-// FilePath .
-func FilePath(fpath string) Option {
-	return func(o *Options) {
-		o.FilePath = fpath
-	}
-}
-
-// New .
-func New(options ...Option) *fileWriter {
-	var opts = defaultOptions()
-	for _, o := range options {
-		o(opts)
-	}
-
-	var fw = &fileWriter{
-		opts: opts,
-		fileStack: &fileStack{
-			files: make([]*fileInfo, opts.TTL-1),
-			cap:   opts.TTL - 1,
-		},
-	}
-
-	if err := fw.repo(opts.FilePath); err != nil {
-		panic(err)
-	}
-	return fw
-}
-
-// Write .
-func (fw *fileWriter) Write(p []byte) (n int, err error) {
-	fw.lock.Lock()
-	if fw.isNotNil() {
-		n, err = fw.writer.Write(p)
-	}
-	fw.lock.Unlock()
-	return n, err
-}
-
-// Close close fileWriter
-func (fw *fileWriter) Close() {
-	fw.closing <- struct{}{}
 }
 
 // closeCurrentFile close current file
@@ -143,7 +108,7 @@ loading:
 		return err
 	}
 
-	current := newFileDate(fw.opts.TTL)
+	current := newFileDate(fw.opts.maxrolls)
 
 	// 统计历史日志文件
 	if len(files) != 0 {
@@ -159,7 +124,7 @@ loading:
 				// 查看是否为当天日志文件
 				// 如果日期为当天，则追加写入
 				// 如果日期不为当天，修改文件名后缀，当天日志记录在新文件中
-				fileDate := newFileDateWithTime(file.ModTime(), fw.opts.TTL)
+				fileDate := newFileDateWithTime(file.ModTime(), fw.opts.maxrolls)
 
 				switch {
 				case current.createAt.Equal(fileDate.createAt):
@@ -181,7 +146,7 @@ loading:
 					}
 				}
 			case strings.HasPrefix(file.Name(), fw.filePrefix):
-				fileDate := newFileDateWithStr(strings.TrimPrefix(file.Name(), fw.filePrefix), fw.opts.TTL)
+				fileDate := newFileDateWithStr(strings.TrimPrefix(file.Name(), fw.filePrefix), fw.opts.maxrolls)
 				if fileDate != nil {
 					filePath := fw.filePathJoin(fw.fileDir, file.Name())
 					switch {
@@ -224,7 +189,7 @@ func (fw *fileWriter) daemon() {
 		select {
 		case <-timer.C:
 			fw.lock.Lock()
-			current := newFileDate(fw.opts.TTL)
+			current := newFileDate(fw.opts.maxrolls)
 			fw.openCurrentFile(current)
 			fw.lock.Unlock()
 
@@ -276,4 +241,40 @@ func (fw *fileWriter) filePathJoin(args ...string) string {
 		builder.WriteString(suffix)
 	}
 	return builder.String()
+}
+
+// Write .
+func (fw *fileWriter) Write(p []byte) (n int, err error) {
+	fw.lock.Lock()
+	if fw.isNotNil() {
+		n, err = fw.writer.Write(p)
+	}
+	fw.lock.Unlock()
+	return n, err
+}
+
+// Close close fileWriter
+func (fw *fileWriter) Close() {
+	fw.closing <- struct{}{}
+}
+
+// New .
+func New(options ...option) *fileWriter {
+	var opts = defaultOptions()
+	for _, o := range options {
+		o(opts)
+	}
+
+	var fw = &fileWriter{
+		opts: opts,
+		fileStack: &fileStack{
+			files: make([]*fileInfo, opts.maxrolls-1),
+			cap:   opts.maxrolls - 1,
+		},
+	}
+
+	if err := fw.repo(opts.output); err != nil {
+		panic(err)
+	}
+	return fw
 }
