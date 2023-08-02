@@ -7,8 +7,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// logger .
-type logger struct {
+// Logger .
+type Logger struct {
 	skip int
 	core zapcore.Core
 	base *zap.SugaredLogger
@@ -23,7 +23,7 @@ func warp(name string) string {
 }
 
 // New .
-func New(opts ...func(o *Options)) *logger {
+func New(opts ...func(o *Options)) *Logger {
 	var options = defaultOptions()
 	for _, opt := range opts {
 		opt(options)
@@ -60,7 +60,7 @@ func New(opts ...func(o *Options)) *logger {
 		core = zapcore.NewTee([]zapcore.Core{core, zapcore.NewCore(encoder, zapcore.AddSync(options.Writer), level)}...)
 	}
 
-	return &logger{
+	return &Logger{
 		skip: options.Skip,
 		core: core,
 		base: zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.Skip+options.baseSkip)).Sugar().Named(warp(options.Name)),
@@ -68,13 +68,13 @@ func New(opts ...func(o *Options)) *logger {
 }
 
 // Named .
-func (log *logger) Named(name string, opts ...func(o *Options)) *logger {
+func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
 	var options = new(Options)
 	for _, opt := range opts {
 		opt(options)
 	}
 
-	return &logger{
+	return &Logger{
 		skip: log.skip,
 		core: log.core,
 		base: zap.New(log.core, zap.AddCaller(), zap.AddCallerSkip(log.skip+options.Skip)).Sugar().Named(warp(name)),
@@ -82,66 +82,66 @@ func (log *logger) Named(name string, opts ...func(o *Options)) *logger {
 }
 
 // Flush .
-func (log *logger) Flush() {
+func (log *Logger) Flush() {
 	log.base.Sync()
 }
 
 // Trace .
-func (log *logger) Trace(v ...interface{}) {
+func (log *Logger) Trace(v ...interface{}) {
 	log.base.Info(v...)
 }
 
 // Tracef .
-func (log *logger) Tracef(format string, params ...interface{}) {
+func (log *Logger) Tracef(format string, params ...interface{}) {
 	log.base.Infof(format, params...)
 }
 
 // Debug .
-func (log *logger) Debug(v ...interface{}) {
+func (log *Logger) Debug(v ...interface{}) {
 	log.base.Debug(v...)
 }
 
 // Debugf .
-func (log *logger) Debugf(format string, params ...interface{}) {
+func (log *Logger) Debugf(format string, params ...interface{}) {
 	log.base.Debugf(format, params...)
 }
 
 // Info .
-func (log *logger) Info(v ...interface{}) {
+func (log *Logger) Info(v ...interface{}) {
 	log.base.Info(v...)
 }
 
 // Infof .
-func (log *logger) Infof(format string, params ...interface{}) {
+func (log *Logger) Infof(format string, params ...interface{}) {
 	log.base.Infof(format, params...)
 }
 
 // Warn .
-func (log *logger) Warn(v ...interface{}) {
+func (log *Logger) Warn(v ...interface{}) {
 	log.base.Warn(v...)
 }
 
 // Warnf .
-func (log *logger) Warnf(format string, params ...interface{}) {
+func (log *Logger) Warnf(format string, params ...interface{}) {
 	log.base.Warnf(format, params...)
 }
 
 // Error .
-func (log *logger) Error(v ...interface{}) {
+func (log *Logger) Error(v ...interface{}) {
 	log.base.Error(v...)
 }
 
 // Errorf .
-func (log *logger) Errorf(format string, params ...interface{}) {
+func (log *Logger) Errorf(format string, params ...interface{}) {
 	log.base.Errorf(format, params...)
 }
 
 // Fatal .
-func (log *logger) Fatal(v ...interface{}) {
+func (log *Logger) Fatal(v ...interface{}) {
 	log.base.Fatal(v...)
 }
 
 // Fatalf .
-func (log *logger) Fatalf(format string, params ...interface{}) {
+func (log *Logger) Fatalf(format string, params ...interface{}) {
 	log.base.Fatalf(format, params...)
 }
