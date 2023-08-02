@@ -73,7 +73,8 @@ func New(opts ...func(o *Options)) *Logger {
 	return &Logger{base: base, sugared: sugared}
 }
 
-// Named .
+// Named 修改 name
+// 注意：是修改，而不是 zap.Logger.Named() 的追加 name
 func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
 	var options = new(Options)
 	for _, opt := range opts {
@@ -85,6 +86,11 @@ func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
 		sugared = sugared.WithOptions(zap.AddCallerSkip(options.Skip))
 	}
 	return &Logger{base: log.base, sugared: sugared}
+}
+
+// CallerSkip 添加调用层
+func (log *Logger) CallerSkip(skip int) *Logger {
+	return &Logger{base: log.base, sugared: log.sugared.WithOptions(zap.AddCallerSkip(skip))}
 }
 
 // Flush .

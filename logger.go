@@ -17,14 +17,19 @@ func SetDefault(opts ...func(o *Options)) {
 	logger = New(append(opts, baseSkip)...)
 }
 
-// Flush .
-func Flush() {
-	logger.Flush()
-}
-
 // Named .
 func Named(name string, opts ...func(o *Options)) *Logger {
 	return logger.Named(name, opts...)
+}
+
+// CallerSkip .
+func CallerSkip(skip int) *Logger {
+	return logger.CallerSkip(skip - 1)
+}
+
+// Flush .
+func Flush() {
+	logger.Flush()
 }
 
 // Trace .

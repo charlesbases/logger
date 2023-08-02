@@ -79,27 +79,34 @@ func TestCaller(t *testing.T) {
 	{
 		SetDefault(func(o *Options) { o.Name = "Default" })
 		Debug(now())
+		CallerSkip(0).Info(82)
 
 		a := Named("A")
-		a.Debug(84)
+		a.Debug(85)
+		a.CallerSkip(0).Info(86)
 
 		b := a.Named("B")
-		b.Debug(87)
+		b.Debug(89)
+		b.CallerSkip(0).Info(90)
 	}
 
 	// new
 	{
 		n := New(func(o *Options) { o.Name = "New" })
 		n.Error(now())
+		CallerSkip(0).Info(97)
 
 		a := n.Named("A")
-		a.Error(96)
+		a.Error(100)
+		a.CallerSkip(0).Info(101)
 
 		b := a.Named("B")
-		b.Error(99)
+		b.Error(104)
+		b.CallerSkip(0).Info(105)
+
 	}
 
-	print(102)
+	print(109)
 }
 
 // print .
