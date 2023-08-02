@@ -9,17 +9,16 @@ import (
 
 // Logger .
 type Logger struct {
-	skip int
-	core zapcore.Core
-	base *zap.SugaredLogger
+	base    *zap.Logger
+	sugared *zap.SugaredLogger
 }
 
 // warp .
-func warp(name string) string {
-	if len(name) != 0 {
-		return "[" + name + "]"
+func warp(v string) string {
+	if len(v) != 0 {
+		return "[" + v + "]"
 	}
-	return name
+	return v
 }
 
 // New .
@@ -60,11 +59,18 @@ func New(opts ...func(o *Options)) *Logger {
 		core = zapcore.NewTee([]zapcore.Core{core, zapcore.NewCore(encoder, zapcore.AddSync(options.Writer), level)}...)
 	}
 
-	return &Logger{
-		skip: options.Skip,
-		core: core,
-		base: zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.Skip+options.baseSkip)).Sugar().Named(warp(options.Name)),
+	base := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.Skip))
+	sugared := base.Sugar()
+
+	// 添加 options 参数判断，减少 gc 负担
+	if options.baseSkip != 0 {
+		sugared = sugared.WithOptions(zap.AddCallerSkip(options.baseSkip))
 	}
+	if len(options.Name) != 0 {
+		sugared = sugared.Named(warp(options.Name))
+	}
+
+	return &Logger{base: base, sugared: sugared}
 }
 
 // Named .
@@ -74,74 +80,74 @@ func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
 		opt(options)
 	}
 
-	return &Logger{
-		skip: log.skip,
-		core: log.core,
-		base: zap.New(log.core, zap.AddCaller(), zap.AddCallerSkip(log.skip+options.Skip)).Sugar().Named(warp(name)),
+	sugared := log.base.Sugar().Named(warp(name))
+	if options.Skip != 0 {
+		sugared = sugared.WithOptions(zap.AddCallerSkip(options.Skip))
 	}
+	return &Logger{base: log.base, sugared: sugared}
 }
 
 // Flush .
 func (log *Logger) Flush() {
-	log.base.Sync()
+	log.sugared.Sync()
 }
 
 // Trace .
 func (log *Logger) Trace(v ...interface{}) {
-	log.base.Info(v...)
+	log.sugared.Info(v...)
 }
 
 // Tracef .
 func (log *Logger) Tracef(format string, params ...interface{}) {
-	log.base.Infof(format, params...)
+	log.sugared.Infof(format, params...)
 }
 
 // Debug .
 func (log *Logger) Debug(v ...interface{}) {
-	log.base.Debug(v...)
+	log.sugared.Debug(v...)
 }
 
 // Debugf .
 func (log *Logger) Debugf(format string, params ...interface{}) {
-	log.base.Debugf(format, params...)
+	log.sugared.Debugf(format, params...)
 }
 
 // Info .
 func (log *Logger) Info(v ...interface{}) {
-	log.base.Info(v...)
+	log.sugared.Info(v...)
 }
 
 // Infof .
 func (log *Logger) Infof(format string, params ...interface{}) {
-	log.base.Infof(format, params...)
+	log.sugared.Infof(format, params...)
 }
 
 // Warn .
 func (log *Logger) Warn(v ...interface{}) {
-	log.base.Warn(v...)
+	log.sugared.Warn(v...)
 }
 
 // Warnf .
 func (log *Logger) Warnf(format string, params ...interface{}) {
-	log.base.Warnf(format, params...)
+	log.sugared.Warnf(format, params...)
 }
 
 // Error .
 func (log *Logger) Error(v ...interface{}) {
-	log.base.Error(v...)
+	log.sugared.Error(v...)
 }
 
 // Errorf .
 func (log *Logger) Errorf(format string, params ...interface{}) {
-	log.base.Errorf(format, params...)
+	log.sugared.Errorf(format, params...)
 }
 
 // Fatal .
 func (log *Logger) Fatal(v ...interface{}) {
-	log.base.Fatal(v...)
+	log.sugared.Fatal(v...)
 }
 
 // Fatalf .
 func (log *Logger) Fatalf(format string, params ...interface{}) {
-	log.base.Fatalf(format, params...)
+	log.sugared.Fatalf(format, params...)
 }

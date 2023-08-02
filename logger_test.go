@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -62,77 +63,52 @@ func TestBase(t *testing.T) {
 	<-time.After(time.Second * 1)
 }
 
-func TestNamed(t *testing.T) {
+func TestTime(t *testing.T) {
+	var count = 10000
+
+	start := time.Now()
+	for i := 0; i < count; i++ {
+		a := Named(strconv.Itoa(i))
+		a.Info(i)
+	}
+	fmt.Println(time.Since(start))
+}
+
+func TestCaller(t *testing.T) {
 	// default
 	{
-		// SetDefault(func(o *Options) {
-		// 	o.Name = "A"
-		// 	o.Writer = filewriter.New(filewriter.OutputPath("log.log"))
-		// })
-		// Debugf("A: %p", base)
-		// Flush()
-		//
-		// b := Named("B")
-		// b.Debugf("B: %p", b)
-		// b.Flush()
-		//
-		// c := Named("C")
-		// c.Debugf("C: %p", c)
-		// c.Flush()
-		//
-		// d := c.Named("D")
-		// d.Debugf("D: %p", d)
-		// d.Flush()
+		SetDefault(func(o *Options) { o.Name = "Default" })
+		Debug(now())
+
+		a := Named("A")
+		a.Debug(84)
+
+		b := a.Named("B")
+		b.Debug(87)
 	}
 
 	// new
 	{
-		// a := New(func(o *Options) {
-		// 	o.Name = "AA"
-		// 	o.Writer = filewriter.New(filewriter.OutputPath("log.log"))
-		// })
-		// a.Debugf("AA: %p", base)
-		// a.Flush()
-		//
-		// b := a.Named("BB")
-		// b.Debugf("BB: %p", b)
-		// b.Flush()
-		//
-		// c := b.Named("CC")
-		// c.Debugf("CC: %p", c)
-		// c.Flush()
+		n := New(func(o *Options) { o.Name = "New" })
+		n.Error(now())
+
+		a := n.Named("A")
+		a.Error(96)
+
+		b := a.Named("B")
+		b.Error(99)
 	}
 
-	// warp
-	{
-		print(1) // print current line
-	}
-
-	// {
-	// 	var loop int = 1e4
-	//
-	// 	var start = time.Now()
-	// 	for i := 0; i < loop; i++ {
-	// 		b := Named("B")
-	// 		b.Debugf("B: %p", b)
-	// 	}
-	// 	fmt.Println(time.Since(start))
-	// }
+	print(102)
 }
 
 // print .
-func print(skip int) {
-	a := Named("A", func(o *Options) {
-		o.Skip = skip
-	})
-	a.Debug("A")
-	a.Flush()
+func print(line int) {
+	a := Named("A", func(o *Options) { o.Skip = 1 })
+	a.Warn(line)
 
-	b := a.Named("B", func(o *Options) {
-		o.Skip = skip
-	})
-	b.Error("B")
-	b.Flush()
+	b := a.Named("B", func(o *Options) { o.Skip = 1 })
+	b.Warn(line)
 }
 
 func TestFileWrite(t *testing.T) {
