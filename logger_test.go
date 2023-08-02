@@ -112,52 +112,39 @@ func print(line int) {
 }
 
 func TestFileWrite(t *testing.T) {
-	// 并发写入同一个日志文件
-	a := New(func(o *Options) {
-		o.Name = "A"
-		o.Writer = filewriter.New(filewriter.OutputPath("log.log"))
-
-	})
-	b := New(func(o *Options) {
-		o.Name = "B"
-		o.Writer = filewriter.New(filewriter.OutputPath("log.log"))
-	})
-	c := New(func(o *Options) {
-		o.Name = "C"
+	SetDefault(func(o *Options) {
 		o.Writer = filewriter.New(filewriter.OutputPath("log.log"))
 	})
 
-	var count = 1 << 10
+	var count = 10000
+	var concurrency = 10
+
 	var swg sync.WaitGroup
-	swg.Add(3)
 
-	go func() {
-		for i := 0; i < count; i++ {
-			a.Info("aaaaaaaaaa")
-		}
-		a.Flush()
-		swg.Done()
-	}()
+	for i := 0; i < concurrency; i++ {
+		swg.Add(1)
 
-	go func() {
-		for i := 0; i < count; i++ {
-			b.Debug("bbbbbbbbbb")
-		}
-		b.Flush()
-		swg.Done()
-	}()
+		go func(ccy int) {
+			name := string([]byte{byte(65 + ccy)})
 
-	go func() {
-		for i := 0; i < count; i++ {
-			c.Error("cccccccccc")
-		}
-		c.Flush()
-		swg.Done()
-	}()
+			log := Named(name)
+			var v string
+			for i := 0; i < 10; i++ {
+				v = v + name
+			}
+
+			fmt.Println(v)
+
+			for i := 0; i < count; i++ {
+				log.Info(v)
+			}
+
+			log.Flush()
+			swg.Done()
+		}(i)
+	}
 
 	swg.Wait()
-
-	time.Sleep(time.Second * 3)
 }
 
 // now .
