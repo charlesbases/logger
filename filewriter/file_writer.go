@@ -15,7 +15,7 @@ const (
 	// defaultMaxRolls 日志保留时间
 	defaultMaxRolls = 7
 	// defaultOutputPath default file path
-	defaultOutputPath = "./log/log.log"
+	defaultOutputPath = "./logs/log.log"
 )
 
 type fileWriter struct {
@@ -47,14 +47,18 @@ type option func(o *options)
 // MaxRolls .
 func MaxRolls(days int) option {
 	return func(o *options) {
-		o.maxrolls = days
+		if days != 0 {
+			o.maxrolls = days
+		}
 	}
 }
 
 // OutputPath .
 func OutputPath(file string) option {
 	return func(o *options) {
-		o.output = file
+		if len(file) != 0 {
+			o.output = file
+		}
 	}
 }
 
