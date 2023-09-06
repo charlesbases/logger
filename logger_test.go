@@ -64,33 +64,44 @@ func TestBase(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	var count, samples = 10000, 10
-
-	fn := func(i int) {
+	// samples: 10
+	// minimum: 291.569ms
+	// maximum: 424.6169ms
+	// average: 309.05249ms
+	bench(func(i int) {
 		log := Named(strconv.Itoa(i))
 		log.Info(i)
-	}
+	})
+}
+
+func bench(fn func(id int)) {
+	var number, count = 10000, 10
 
 	var min, max, total time.Duration
-	for i := 0; i < samples; i++ {
+	for i := 0; i < count; i++ {
 		start := time.Now()
-		for i := 0; i < count; i++ {
+		for i := 0; i < number; i++ {
 			fn(i)
 		}
 		sub := time.Since(start)
-		fmt.Println(fmt.Sprintf("count %d: %v", i+1, sub))
-		if sub > max {
+
+		switch {
+		case max == 0:
 			max = sub
-		}
-		if sub < min || min == 0 {
+			min = sub
+		case sub > max:
+			max = sub
+		case sub < min:
 			min = sub
 		}
+
 		total += sub
 	}
 
-	fmt.Println("minimum:", min)      // 344.2704ms
-	fmt.Println("maximum:", max)      // 461.7053ms
-	fmt.Println("average:", total/10) // 382.72425ms
+	fmt.Println("samples:", count)
+	fmt.Println("minimum:", min)
+	fmt.Println("maximum:", max)
+	fmt.Println("average:", total/time.Duration(count))
 }
 
 func TestCaller(t *testing.T) {
