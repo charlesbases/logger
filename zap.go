@@ -2,6 +2,7 @@ package logger
 
 import (
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -16,7 +17,12 @@ type Logger struct {
 // warp .
 func warp(v string) string {
 	if len(v) != 0 {
-		return "[" + v + "]"
+		var b strings.Builder
+		b.Grow(len(v) + 2)
+		b.WriteString("[")
+		b.WriteString(v)
+		b.WriteString("]")
+		return b.String()
 	}
 	return v
 }
