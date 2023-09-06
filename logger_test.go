@@ -64,14 +64,33 @@ func TestBase(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	var count = 10000
+	var count, samples = 10000, 10
 
-	start := time.Now()
-	for i := 0; i < count; i++ {
-		a := Named(strconv.Itoa(i))
-		a.Info(i)
+	fn := func(i int) {
+		log := Named(strconv.Itoa(i))
+		log.Info(i)
 	}
-	fmt.Println(time.Since(start))
+
+	var min, max, total time.Duration
+	for i := 0; i < samples; i++ {
+		start := time.Now()
+		for i := 0; i < count; i++ {
+			fn(i)
+		}
+		sub := time.Since(start)
+		fmt.Println(fmt.Sprintf("count %d: %v", i+1, sub))
+		if sub > max {
+			max = sub
+		}
+		if sub < min || min == 0 {
+			min = sub
+		}
+		total += sub
+	}
+
+	fmt.Println("minimum:", min)      // 344.2704ms
+	fmt.Println("maximum:", max)      // 461.7053ms
+	fmt.Println("average:", total/10) // 382.72425ms
 }
 
 func TestCaller(t *testing.T) {
