@@ -72,7 +72,7 @@ func TestCaller(t *testing.T) {
 	{
 		n := New(func(o *Options) { o.Name = "New" })
 		n.Error(74)
-		// CallerSkip(0).Info(75)
+		n.CallerSkip(0).Info(75)
 
 		a := n.Named("A")
 		a.Error(78)
@@ -88,7 +88,7 @@ func TestCaller(t *testing.T) {
 
 // print .
 func print(line int) {
-	a := Named("A", func(o *Options) { o.Skip = 1 })
+	a := Named("C", func(o *Options) { o.Skip = 1 })
 	a.Warn(line)
 
 	b := a.Named("", func(o *Options) { o.Skip = 1 })

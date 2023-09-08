@@ -65,8 +65,12 @@ func New(opts ...func(o *Options)) *Logger {
 }
 
 // clone .
-func (log *Logger) clone(sugared *zap.SugaredLogger) *Logger {
-	return &Logger{base: log.base, sugared: sugared}
+func (log *Logger) clone(opts ...func(copylog *Logger)) *Logger {
+	var copylog = *log
+	for _, opt := range opts {
+		opt(&copylog)
+	}
+	return &copylog
 }
 
 // Named 修改 name
@@ -84,12 +88,16 @@ func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
 	if options.Skip != 0 {
 		sugared = sugared.WithOptions(zap.AddCallerSkip(options.Skip))
 	}
-	return log.clone(sugared)
+	return log.clone(func(copylog *Logger) {
+		copylog.sugared = sugared
+	})
 }
 
 // CallerSkip 添加调用层
 func (log *Logger) CallerSkip(skip int) *Logger {
-	return log.clone(log.sugared.WithOptions(zap.AddCallerSkip(skip)))
+	return log.clone(func(copylog *Logger) {
+		copylog.sugared = log.sugared.WithOptions(zap.AddCallerSkip(skip))
+	})
 }
 
 // Flush .
