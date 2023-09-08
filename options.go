@@ -13,9 +13,9 @@ const (
 type Options struct {
 	// Name 名称
 	Name string
-	// Skip 跳过的调用者数量. default: defaultCallerSkip
+	// Skip 跳过的调用者数量
 	Skip int
-	// MinLevel 允许的最小日志级别. default: "trace"
+	// MinLevel 允许的最小日志级别. default: "debug"
 	MinLevel string
 	// Writer others output
 	Writer io.Writer
