@@ -91,7 +91,7 @@ func print(line int) {
 	a := Named("A", func(o *Options) { o.Skip = 1 })
 	a.Warn(line)
 
-	b := a.Named("B", func(o *Options) { o.Skip = 1 })
+	b := a.Named("", func(o *Options) { o.Skip = 1 })
 	b.Warn(line)
 }
 
@@ -185,4 +185,5 @@ func bench(fn func(id int)) {
 	fmt.Println("minimum:", min)
 	fmt.Println("maximum:", max)
 	fmt.Println("average:", total/time.Duration(count))
+	fmt.Println()
 }
