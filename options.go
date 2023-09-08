@@ -17,25 +17,24 @@ type Options struct {
 	Skip int
 	// MinLevel 允许的最小日志级别. default: "trace"
 	MinLevel string
-	// MaxLevel 允许的最大日志级别. default: "fatal"
-	MaxLevel string
 	// Writer others output
 	Writer io.Writer
 
-	baseSkip int
-
 	// minlevel convert MinLevel to level
 	minlevel level
-	// maxlevel convert from MaxLevel to level
-	maxlevel level
 }
 
-// defaultOptions .
-func defaultOptions() *Options {
-	return &Options{
-		Skip: defaultCallerSkip,
-
-		minlevel: minlevel,
-		maxlevel: maxlevel,
+// option .
+func option(opts ...func(o *Options)) *Options {
+	var options = &Options{Skip: defaultCallerSkip, minlevel: minlevel}
+	for _, opt := range opts {
+		opt(options)
+		break
 	}
+	if len(options.MinLevel) != 0 {
+		if minlevel, found := string2level[options.MinLevel]; found {
+			options.minlevel = minlevel
+		}
+	}
+	return options
 }

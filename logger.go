@@ -2,11 +2,8 @@ package logger
 
 var logger *Logger
 
-// baseSkip 因为 logger 对 Logger 再封装了一层，所以 defaultCallerSkip + 1
-var baseSkip = func(o *Options) { o.baseSkip = 1 }
-
 func init() {
-	logger = New(baseSkip)
+	logger = New()
 }
 
 // SetDefault .
@@ -14,7 +11,7 @@ func SetDefault(opts ...func(o *Options)) {
 	if logger != nil {
 		logger.Flush()
 	}
-	logger = New(append(opts, baseSkip)...)
+	logger = New(opts...)
 }
 
 // Named .
@@ -24,7 +21,7 @@ func Named(name string, opts ...func(o *Options)) *Logger {
 
 // CallerSkip .
 func CallerSkip(skip int) *Logger {
-	return logger.CallerSkip(skip - 1)
+	return logger.CallerSkip(skip)
 }
 
 // Flush .
@@ -32,62 +29,52 @@ func Flush() {
 	logger.Flush()
 }
 
-// Trace .
-func Trace(v ...interface{}) {
-	logger.Trace(v...)
-}
-
-// Tracef .
-func Tracef(format string, params ...interface{}) {
-	logger.Tracef(format, params...)
-}
-
 // Debug .
 func Debug(v ...interface{}) {
-	logger.Debug(v...)
+	logger.sugared.Debug(v...)
 }
 
 // Debugf .
 func Debugf(format string, params ...interface{}) {
-	logger.Debugf(format, params...)
+	logger.sugared.Debugf(format, params...)
 }
 
 // Info .
 func Info(v ...interface{}) {
-	logger.Info(v...)
+	logger.sugared.Info(v...)
 }
 
 // Infof .
 func Infof(format string, params ...interface{}) {
-	logger.Infof(format, params...)
+	logger.sugared.Infof(format, params...)
 }
 
 // Warn .
 func Warn(v ...interface{}) {
-	logger.Warn(v...)
+	logger.sugared.Warn(v...)
 }
 
 // Warnf .
 func Warnf(format string, params ...interface{}) {
-	logger.Warnf(format, params...)
+	logger.sugared.Warnf(format, params...)
 }
 
 // Error .
 func Error(v ...interface{}) {
-	logger.Error(v...)
+	logger.sugared.Error(v...)
 }
 
 // Errorf .
 func Errorf(format string, params ...interface{}) {
-	logger.Errorf(format, params...)
+	logger.sugared.Errorf(format, params...)
 }
 
 // Fatal .
 func Fatal(v ...interface{}) {
-	logger.Fatal(v...)
+	logger.sugared.Fatal(v...)
 }
 
 // Fatalf .
 func Fatalf(format string, params ...interface{}) {
-	logger.Fatalf(format, params...)
+	logger.sugared.Fatalf(format, params...)
 }

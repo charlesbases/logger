@@ -29,23 +29,13 @@ func warp(v string) string {
 
 // New .
 func New(opts ...func(o *Options)) *Logger {
-	var options = defaultOptions()
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	if len(options.MaxLevel) != 0 {
-		options.maxlevel = convertString(options.MaxLevel)
-	}
-	if len(options.MinLevel) != 0 {
-		options.minlevel = convertString(options.MinLevel)
-	}
+	var options = option(opts...)
 
 	// 编码器
 	encodercfg := zap.NewProductionEncoderConfig()
 	encodercfg.EncodeTime = zapcore.TimeEncoderOfLayout(warp(defaultDateFormat))
 	encodercfg.EncodeLevel = func(level zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
-		encoder.AppendString(render[convertZapLevel(level)])
+		encoder.AppendString(render[level])
 	}
 	encodercfg.EncodeCaller = zapcore.ShortCallerEncoder
 	encodercfg.ConsoleSeparator = " "
@@ -53,8 +43,7 @@ func New(opts ...func(o *Options)) *Logger {
 
 	// 日志级别
 	level := zap.LevelEnablerFunc(func(lv zapcore.Level) bool {
-		var l = convertZapLevel(lv)
-		return l >= options.minlevel && l <= options.maxlevel
+		return level(lv) >= options.minlevel
 	})
 
 	// output-console
@@ -68,10 +57,6 @@ func New(opts ...func(o *Options)) *Logger {
 	base := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.Skip))
 	sugared := base.Sugar()
 
-	// 添加 options 参数判断，减少 gc 负担
-	if options.baseSkip != 0 {
-		sugared = sugared.WithOptions(zap.AddCallerSkip(options.baseSkip))
-	}
 	if len(options.Name) != 0 {
 		sugared = sugared.Named(warp(options.Name))
 	}
@@ -102,16 +87,6 @@ func (log *Logger) CallerSkip(skip int) *Logger {
 // Flush .
 func (log *Logger) Flush() {
 	log.sugared.Sync()
-}
-
-// Trace .
-func (log *Logger) Trace(v ...interface{}) {
-	log.sugared.Info(v...)
-}
-
-// Tracef .
-func (log *Logger) Tracef(format string, params ...interface{}) {
-	log.sugared.Infof(format, params...)
 }
 
 // Debug .

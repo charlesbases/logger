@@ -10,6 +10,11 @@ import (
 	"github.com/charlesbases/logger/filewriter"
 )
 
+// now .
+func now() string {
+	return time.Now().Format(defaultDateFormat)
+}
+
 func TestMultipleLogger(t *testing.T) {
 	Debug("Base logger")
 
@@ -33,7 +38,6 @@ func TestNewLogger(t *testing.T) {
 
 	logger := New(func(o *Options) {
 		o.Name = "New"
-
 	})
 
 	var start = time.Now()
@@ -46,6 +50,85 @@ func TestNewLogger(t *testing.T) {
 	fmt.Println(time.Since(start))
 
 	<-time.After(time.Second * 1)
+}
+
+func TestCaller(t *testing.T) {
+	// default
+	{
+		SetDefault(func(o *Options) { o.Name = "Default" })
+		Debug(59)
+		CallerSkip(0).Info(60)
+
+		a := Named("A")
+		a.Debug(63)
+		a.CallerSkip(0).Info(64)
+
+		b := a.Named("B")
+		b.Debug(67)
+		b.CallerSkip(0).Info(68)
+	}
+
+	// new
+	{
+		n := New(func(o *Options) { o.Name = "New" })
+		n.Error(74)
+		// CallerSkip(0).Info(75)
+
+		a := n.Named("A")
+		a.Error(78)
+		a.CallerSkip(0).Info(79)
+
+		b := a.Named("B")
+		b.Error(82)
+		b.CallerSkip(0).Info(83)
+	}
+
+	print(86)
+}
+
+// print .
+func print(line int) {
+	a := Named("A", func(o *Options) { o.Skip = 1 })
+	a.Warn(line)
+
+	b := a.Named("B", func(o *Options) { o.Skip = 1 })
+	b.Warn(line)
+}
+
+func TestFileWrite(t *testing.T) {
+	SetDefault(func(o *Options) {
+		o.Writer = filewriter.New(filewriter.OutputPath("log.log"))
+	})
+
+	var count = 10000
+	var concurrency = 10
+
+	var swg sync.WaitGroup
+
+	for i := 0; i < concurrency; i++ {
+		swg.Add(1)
+
+		go func(ccy int) {
+			name := string([]byte{byte(65 + ccy)})
+
+			log := Named(name)
+			var v string
+			for i := 0; i < 10; i++ {
+				v = v + name
+			}
+
+			fmt.Println(v)
+
+			for i := 0; i < count; i++ {
+				log.Info(v)
+			}
+
+			log.Flush()
+			swg.Done()
+		}(i)
+	}
+
+	swg.Wait()
 }
 
 func TestBase(t *testing.T) {
@@ -102,89 +185,4 @@ func bench(fn func(id int)) {
 	fmt.Println("minimum:", min)
 	fmt.Println("maximum:", max)
 	fmt.Println("average:", total/time.Duration(count))
-}
-
-func TestCaller(t *testing.T) {
-	// default
-	{
-		SetDefault(func(o *Options) { o.Name = "Default" })
-		Debug(now())
-		CallerSkip(0).Info(82)
-
-		a := Named("A")
-		a.Debug(85)
-		a.CallerSkip(0).Info(86)
-
-		b := a.Named("B")
-		b.Debug(89)
-		b.CallerSkip(0).Info(90)
-	}
-
-	// new
-	{
-		n := New(func(o *Options) { o.Name = "New" })
-		n.Error(now())
-		CallerSkip(0).Info(97)
-
-		a := n.Named("A")
-		a.Error(100)
-		a.CallerSkip(0).Info(101)
-
-		b := a.Named("B")
-		b.Error(104)
-		b.CallerSkip(0).Info(105)
-
-	}
-
-	print(109)
-}
-
-// print .
-func print(line int) {
-	a := Named("A", func(o *Options) { o.Skip = 1 })
-	a.Warn(line)
-
-	b := a.Named("B", func(o *Options) { o.Skip = 1 })
-	b.Warn(line)
-}
-
-func TestFileWrite(t *testing.T) {
-	SetDefault(func(o *Options) {
-		o.Writer = filewriter.New(filewriter.OutputPath("log.log"))
-	})
-
-	var count = 10000
-	var concurrency = 10
-
-	var swg sync.WaitGroup
-
-	for i := 0; i < concurrency; i++ {
-		swg.Add(1)
-
-		go func(ccy int) {
-			name := string([]byte{byte(65 + ccy)})
-
-			log := Named(name)
-			var v string
-			for i := 0; i < 10; i++ {
-				v = v + name
-			}
-
-			fmt.Println(v)
-
-			for i := 0; i < count; i++ {
-				log.Info(v)
-			}
-
-			log.Flush()
-			swg.Done()
-		}(i)
-	}
-
-	swg.Wait()
-}
-
-// now .
-func now() string {
-	return time.Now().Format(defaultDateFormat)
 }
