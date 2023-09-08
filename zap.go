@@ -73,6 +73,13 @@ func (log *Logger) clone(opts ...func(copylog *Logger)) *Logger {
 	return &copylog
 }
 
+// CallerSkip 添加调用层
+func (log *Logger) CallerSkip(skip int) *Logger {
+	return log.clone(func(copylog *Logger) {
+		copylog.sugared = log.sugared.WithOptions(zap.AddCallerSkip(skip))
+	})
+}
+
 // Named 修改 name
 // 注意：是修改，而不是 zap.Logger.Named() 的追加 name
 func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
@@ -90,13 +97,6 @@ func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
 	}
 	return log.clone(func(copylog *Logger) {
 		copylog.sugared = sugared
-	})
-}
-
-// CallerSkip 添加调用层
-func (log *Logger) CallerSkip(skip int) *Logger {
-	return log.clone(func(copylog *Logger) {
-		copylog.sugared = log.sugared.WithOptions(zap.AddCallerSkip(skip))
 	})
 }
 

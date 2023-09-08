@@ -14,14 +14,14 @@ func SetDefault(opts ...func(o *Options)) {
 	logger = New(opts...)
 }
 
-// Named .
-func Named(name string, opts ...func(o *Options)) *Logger {
-	return logger.Named(name, opts...)
-}
-
 // CallerSkip .
 func CallerSkip(skip int) *Logger {
 	return logger.CallerSkip(skip)
+}
+
+// Named .
+func Named(name string, opts ...func(o *Options)) *Logger {
+	return logger.Named(name, opts...)
 }
 
 // Flush .
