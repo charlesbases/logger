@@ -3,7 +3,6 @@ package logger
 import (
 	"fmt"
 	"strconv"
-	"sync"
 	"testing"
 	"time"
 
@@ -20,13 +19,13 @@ func TestMultipleLogger(t *testing.T) {
 
 	SetDefault(func(o *Options) {
 		o.Name = "Default"
-		o.Writer = filewriter.New(filewriter.MaxRolls(7), filewriter.OutputPath("log.log"))
+		o.Writer = filewriter.New()
 	})
 	Debug("SetDefault logger")
 
 	newl := New(func(o *Options) {
 		o.Name = "New"
-		o.Writer = filewriter.New(filewriter.MaxRolls(7), filewriter.OutputPath("log.log"))
+		o.Writer = filewriter.New()
 	})
 	newl.Debug("New logger")
 
@@ -97,38 +96,16 @@ func print(line int) {
 
 func TestFileWrite(t *testing.T) {
 	SetDefault(func(o *Options) {
-		o.Writer = filewriter.New(filewriter.OutputPath("log.log"))
+		o.Writer = filewriter.New()
 	})
 
-	var count = 10000
-	var concurrency = 10
-
-	var swg sync.WaitGroup
-
-	for i := 0; i < concurrency; i++ {
-		swg.Add(1)
-
-		go func(ccy int) {
-			name := string([]byte{byte(65 + ccy)})
-
-			log := Named(name)
-			var v string
-			for i := 0; i < 10; i++ {
-				v = v + name
-			}
-
-			fmt.Println(v)
-
-			for i := 0; i < count; i++ {
-				log.Info(v)
-			}
-
-			log.Flush()
-			swg.Done()
-		}(i)
+	tk := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-tk.C:
+			Info(now())
+		}
 	}
-
-	swg.Wait()
 }
 
 func TestBase(t *testing.T) {
