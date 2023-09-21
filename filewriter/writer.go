@@ -155,9 +155,9 @@ func (fw *fileWriter) tidy() error {
 		if !entry.IsDir() && len(entry.Name()) != len(fw.fileName) && strings.HasPrefix(entry.Name(), fw.fileName) {
 			if suffix := filepath.Ext(entry.Name()); len(suffix) != 0 {
 				suffix = suffix[1:]
-				if t, err := time.Parse(defaultDateLayou, suffix); err == nil {
+				if t, err := time.ParseInLocation(defaultDateLayou, suffix, fw.currentTime.Location()); err == nil {
 					if t.Before(oldest) {
-						os.Remove(entry.Name())
+						os.Remove(filepath.Join(fw.folderName, entry.Name()))
 					}
 				}
 			}
