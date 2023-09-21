@@ -1,9 +1,10 @@
 module github.com/charlesbases/logger
 
-go 1.19
+go 1.20
 
 require (
 	github.com/charlesbases/colors v1.0.0
+	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.26.0
 )
 

@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 
 // Logger .
 type Logger struct {
+	hook    ContextHook
 	base    *zap.Logger
 	sugared *zap.SugaredLogger
 }
@@ -35,7 +37,7 @@ func New(opts ...func(o *Options)) *Logger {
 	encodercfg := zap.NewProductionEncoderConfig()
 	encodercfg.EncodeTime = zapcore.TimeEncoderOfLayout(warp(defaultDateFormat))
 	encodercfg.EncodeLevel = func(level zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
-		encoder.AppendString(render[level])
+		encoder.AppendString(shortName(level)(options.Colourful))
 	}
 	encodercfg.EncodeCaller = zapcore.ShortCallerEncoder
 	encodercfg.ConsoleSeparator = " "
@@ -61,15 +63,13 @@ func New(opts ...func(o *Options)) *Logger {
 		sugared = sugared.Named(warp(options.Name))
 	}
 
-	return &Logger{base: base, sugared: sugared}
+	return &Logger{hook: options.ContextHook, base: base, sugared: sugared}
 }
 
 // clone .
-func (log *Logger) clone(opts ...func(copylog *Logger)) *Logger {
+func (log *Logger) clone(opt func(copylog *Logger)) *Logger {
 	var copylog = *log
-	for _, opt := range opts {
-		opt(&copylog)
-	}
+	opt(&copylog)
 	return &copylog
 }
 
@@ -78,6 +78,14 @@ func (log *Logger) CallerSkip(skip int) *Logger {
 	return log.clone(func(copylog *Logger) {
 		copylog.sugared = log.sugared.WithOptions(zap.AddCallerSkip(skip))
 	})
+}
+
+// WithContext return new Logger with context
+func (log *Logger) WithContext(ctx context.Context) *Logger {
+	if log.hook != nil {
+		return log.hook(ctx)(log)
+	}
+	return log
 }
 
 // Named 修改 name

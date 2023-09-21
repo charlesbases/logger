@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -94,18 +95,24 @@ func print(line int) {
 	b.Warn(line)
 }
 
-func TestFileWrite(t *testing.T) {
+func TestFileWriter(t *testing.T) {
 	SetDefault(func(o *Options) {
 		o.Writer = filewriter.New()
 	})
 
-	tk := time.NewTicker(time.Second)
-	for {
-		select {
-		case <-tk.C:
-			Info(now())
-		}
+	for i := 0; i < 10; i++ {
+		go func() {
+			tk := time.NewTicker(time.Second)
+			for {
+				select {
+				case <-tk.C:
+					Info(now())
+				}
+			}
+		}()
 	}
+
+	select {}
 }
 
 func TestBase(t *testing.T) {
@@ -121,6 +128,22 @@ func TestBase(t *testing.T) {
 	fmt.Println(time.Since(start))
 
 	<-time.After(time.Second * 1)
+}
+
+func TestContextHook(t *testing.T) {
+	log := New(func(o *Options) {
+		o.ContextHook = func(ctx context.Context) func(l *Logger) *Logger {
+			return func(l *Logger) *Logger {
+				if traceid, ok := ctx.Value("traceid").(string); ok && len(traceid) != 0 {
+					return l.Named(traceid)
+				}
+				return l
+			}
+		}
+	})
+
+	ctx := context.WithValue(context.Background(), "traceid", "123456")
+	log.WithContext(ctx).Info(time.Now())
 }
 
 func TestTime(t *testing.T) {

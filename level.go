@@ -8,27 +8,65 @@ import (
 type level int8
 
 const (
-	debug level = iota - 1
-	info
-	warn
-	error
-	fatal
+	debugLevel level = iota - 1
+	infoLevel
+	warnLevel
+	errorLevel
+	fatalLevel
 
-	minlevel = debug
+	minlevel = debugLevel
 )
 
-var render = map[zapcore.Level]string{
-	zapcore.DebugLevel: colors.PurpleSprint("DBG"),
-	zapcore.InfoLevel:  colors.GreenSprint("INF"),
-	zapcore.WarnLevel:  colors.BlueSprint("WRN"),
-	zapcore.ErrorLevel: colors.RedSprint("ERR"),
-	zapcore.FatalLevel: colors.RedSprint("FAT"),
+var render = map[zapcore.Level]func(b bool) string{
+	zapcore.DebugLevel: func(b bool) string {
+		if b {
+			return colors.PurpleSprint("DBG")
+		}
+		return "DBG"
+	},
+	zapcore.InfoLevel: func(b bool) string {
+		if b {
+			return colors.GreenSprint("INF")
+		}
+		return "INF"
+	},
+	zapcore.WarnLevel: func(b bool) string {
+		if b {
+			return colors.BlueSprint("WRN")
+		}
+		return "WRN"
+	},
+	zapcore.ErrorLevel: func(b bool) string {
+		if b {
+			return colors.RedSprint("ERR")
+		}
+		return "ERR"
+	},
+	zapcore.FatalLevel: func(b bool) string {
+		if b {
+			return colors.RedSprint("FAT")
+		}
+		return "FAT"
+	},
 }
 
 var string2level = map[string]level{
-	"debug": debug,
-	"info":  info,
-	"warn":  warn,
-	"error": error,
-	"fatal": fatal,
+	"debug": debugLevel,
+	"info":  infoLevel,
+	"warn":  warnLevel,
+	"error": errorLevel,
+	"fatal": fatalLevel,
+}
+
+// shortName .
+func shortName(zl zapcore.Level) func(b bool) string {
+	if fn, found := render[zl]; found {
+		return fn
+	}
+	return func(b bool) string {
+		if b {
+			return colors.RedSprint("UNK")
+		}
+		return "UNK"
+	}
 }

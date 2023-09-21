@@ -1,6 +1,9 @@
 package logger
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 const (
 	// defaultCallerSkip .
@@ -8,6 +11,9 @@ const (
 	// defaultDateFormat date format
 	defaultDateFormat = "2006-01-02 15:04:05.000"
 )
+
+// ContextHook return new Logger with context
+type ContextHook func(ctx context.Context) func(l *Logger) *Logger
 
 // Options .
 type Options struct {
@@ -17,9 +23,12 @@ type Options struct {
 	Skip int
 	// MinLevel 允许的最小日志级别. default: "debug"
 	MinLevel string
+	// Colourful 日志级别多彩显示
+	Colourful bool
 	// Writer others output
 	Writer io.Writer
-
+	// ContextHook return new Logger with context. eg: TestContextHook
+	ContextHook ContextHook
 	// minlevel convert MinLevel to level
 	minlevel level
 }

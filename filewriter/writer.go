@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -32,30 +34,29 @@ type fileWriter struct {
 	// fullName log file name of abs
 	fullName string
 
+	// currentTime .
+	currentTime time.Time
 	// currentFileWriter os.File of log
 	currentFileWriter *os.File
+	// currentFileCreateAt log file create time
+	currentFileCreateAt time.Time
 	// currentFileExpireAt log file expire time
-	currentFileExpireAt int64
+	currentFileExpireAt time.Time
 
 	// lock zap 的日志输出流是线程安全的，此处的 lock 是防止零点时刻进行日志备份时，正确写入新的日志文件
 	lock sync.Mutex
 }
 
-// New .
-func New(opts ...func(o *options)) *fileWriter {
-	return option(opts...)
-}
-
 // Write .
 func (fw *fileWriter) Write(p []byte) (int, error) {
-	t := time.Now()
-
 	fw.lock.Lock()
 	defer fw.lock.Unlock()
 
+	fw.currentTime = time.Now()
+
 	// needs to roll
-	if fw.currentFileExpireAt != 0 && fw.currentFileExpireAt <= t.Unix() {
-		if err := fw.rolling(t); err != nil {
+	if !fw.currentFileExpireAt.IsZero() && !fw.currentTime.Before(fw.currentFileExpireAt) {
+		if err := fw.rolling(); err != nil {
 			return 0, err
 		}
 	}
@@ -66,6 +67,7 @@ func (fw *fileWriter) Write(p []byte) (int, error) {
 			return 0, err
 		}
 	}
+
 	return fw.currentFileWriter.Write(p)
 }
 
@@ -74,60 +76,19 @@ func (fw *fileWriter) Close() (err error) {
 	if fw.currentFileWriter != nil {
 		err = fw.currentFileWriter.Close()
 		fw.currentFileWriter = nil
-		fw.currentFileExpireAt = 0
 	}
 	return err
 }
 
-// open .
-func (fw *fileWriter) open() error {
-	t := time.Now()
-
-	if err := os.MkdirAll(fw.folderName, defaultFolderPermissions); err != nil {
-		return err
-	}
-
-	fileInfo, err := os.Stat(fw.fullName)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-		return fw.create(t)
-	}
-
-	// 当前已存在的日志文件为旧文件
-	if next(fileInfo.ModTime(), 1) <= t.Unix() {
-		if err := fw.rename(t); err != nil {
-			return err
-		}
-
-		go fw.tidy()
-	}
-
-	return fw.create(t)
-}
-
-// create .
-func (fw *fileWriter) create(t time.Time) error {
-	file, err := os.OpenFile(fw.fullName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, defaultFilePermissions)
-	if err != nil {
-		return err
-	}
-
-	fw.currentFileWriter = file
-	fw.currentFileExpireAt = next(t, 1)
-	return nil
-}
-
 // rolling .
-func (fw *fileWriter) rolling(t time.Time) error {
+func (fw *fileWriter) rolling() error {
 	// close current file
 	if err := fw.Close(); err != nil {
 		return err
 	}
 
 	// rename
-	if err := fw.rename(t); err != nil {
+	if err := fw.rename(fw.currentFileCreateAt); err != nil {
 		return err
 	}
 
@@ -137,31 +98,65 @@ func (fw *fileWriter) rolling(t time.Time) error {
 
 // rename .
 func (fw *fileWriter) rename(t time.Time) error {
-	return os.Rename(fw.fullName, filepath.Join(fw.folderName, strings.Join([]string{fw.fileName, suffix(t)}, ".")))
+	return os.Rename(fw.fullName, filepath.Join(fw.folderName, strings.Join([]string{fw.fileName, date(t)}, ".")))
 }
 
-// oldest 根据 fileWriter.maxRolls 获取最旧的日期
-func (fw *fileWriter) oldest() int64 {
-	t := time.Now()
-	return time.Date(t.Year(), t.Month(), t.Day()-fw.maxRolls, 0, 0, 0, 0, t.Location()).Unix()
+// open .
+func (fw *fileWriter) open() error {
+	if err := os.MkdirAll(fw.folderName, defaultFolderPermissions); err != nil {
+		return errors.Wrap(err, "mkdir folder")
+	}
+
+	fileInfo, err := os.Stat(fw.fullName)
+	if err != nil {
+		// 文件不存在，则直接创建新文件
+		if os.IsNotExist(err) {
+			return fw.create()
+		}
+		return err
+	}
+
+	// 是否为当天日志文件
+	if fileInfo.ModTime().Day() != fw.currentTime.Day() ||
+		fileInfo.ModTime().Year() != fw.currentTime.Year() ||
+		fileInfo.ModTime().Month() != fw.currentTime.Month() {
+		if err := fw.rename(fileInfo.ModTime()); err != nil {
+			return err
+		}
+		go fw.tidy()
+	}
+
+	return fw.create()
 }
 
-// tidy remove old log
+// create .
+func (fw *fileWriter) create() error {
+	file, err := os.OpenFile(fw.fullName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, defaultFilePermissions)
+	if err != nil {
+		return errors.Wrap(err, "open file")
+	}
+
+	fw.currentFileWriter = file
+	fw.currentFileCreateAt = midnight(time.Now())
+	fw.currentFileExpireAt = midnight(fw.currentFileCreateAt, 1)
+	return nil
+}
+
+// tidy .
 func (fw *fileWriter) tidy() error {
 	src, err := os.ReadDir(fw.folderName)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "open folder")
 	}
 
 	oldest := fw.oldest()
 
 	for _, entry := range src {
-		// old log
 		if !entry.IsDir() && len(entry.Name()) != len(fw.fileName) && strings.HasPrefix(entry.Name(), fw.fileName) {
 			if suffix := filepath.Ext(entry.Name()); len(suffix) != 0 {
 				suffix = suffix[1:]
 				if t, err := time.Parse(defaultDateLayou, suffix); err == nil {
-					if next(t, 0) < oldest {
+					if t.Before(oldest) {
 						os.Remove(entry.Name())
 					}
 				}
@@ -171,12 +166,43 @@ func (fw *fileWriter) tidy() error {
 	return nil
 }
 
-// suffix .
-func suffix(t time.Time) string {
+// oldest return fileWriter.currentTime - fileWriter.maxRolls * time.Hour * 24
+func (fw *fileWriter) oldest() time.Time {
+	return midnight(fw.currentTime, -fw.maxRolls)
+}
+
+// New .
+func New(opts ...func(o *options)) *fileWriter {
+	options := &options{
+		output:   defaultPath,
+		maxrolls: defaultMaxRolls,
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	fullpath, _ := filepath.Abs(options.output)
+	folderName, fileName := filepath.Split(fullpath)
+
+	return &fileWriter{
+		maxRolls:   options.maxrolls,
+		folderName: folderName,
+		fileName:   fileName,
+		fullName:   fullpath,
+	}
+}
+
+// date .
+func date(t time.Time) string {
 	return t.Format(defaultDateLayou)
 }
 
-// next .
-func next(t time.Time, days int) int64 {
-	return time.Date(t.Year(), t.Month(), t.Day()+days, 0, 0, 0, 0, t.Location()).Unix()
+// midnight 零点时间
+func midnight(t time.Time, days ...int) time.Time {
+	var day int
+	if len(days) != 0 {
+		day = days[0]
+	}
+	return time.Date(t.Year(), t.Month(), t.Day()+day, 0, 0, 0, 0, t.Location())
 }

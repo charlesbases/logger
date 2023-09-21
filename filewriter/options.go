@@ -1,7 +1,5 @@
 package filewriter
 
-import "path/filepath"
-
 // options .
 type options struct {
 	// output 日志文件路径
@@ -25,26 +23,5 @@ func MaxRolls(days int) func(o *options) {
 		if days != 0 {
 			o.maxrolls = days
 		}
-	}
-}
-
-// option .
-func option(opts ...func(o *options)) *fileWriter {
-	options := &options{
-		output:   defaultPath,
-		maxrolls: defaultMaxRolls,
-	}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	fullpath, _ := filepath.Abs(options.output)
-	folderName, fileName := filepath.Split(fullpath)
-
-	return &fileWriter{
-		maxRolls:   options.maxrolls,
-		folderName: folderName,
-		fileName:   fileName,
-		fullName:   fullpath,
 	}
 }
