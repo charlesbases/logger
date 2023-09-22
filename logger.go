@@ -1,5 +1,7 @@
 package logger
 
+import "context"
+
 var logger *Logger
 
 func init() {
@@ -17,6 +19,11 @@ func SetDefault(opts ...func(o *Options)) {
 // CallerSkip .
 func CallerSkip(skip int) *Logger {
 	return logger.CallerSkip(skip)
+}
+
+// WithContext .
+func WithContext(ctx context.Context) *Logger {
+	return logger.WithContext(ctx)
 }
 
 // Named .

@@ -146,7 +146,7 @@ func TestBase(t *testing.T) {
 }
 
 func TestContextHook(t *testing.T) {
-	log := New(func(o *Options) {
+	SetDefault(func(o *Options) {
 		o.ContextHook = func(ctx context.Context) func(l *Logger) *Logger {
 			return func(l *Logger) *Logger {
 				if traceid, ok := ctx.Value("traceid").(string); ok && len(traceid) != 0 {
@@ -158,7 +158,7 @@ func TestContextHook(t *testing.T) {
 	})
 
 	ctx := context.WithValue(context.Background(), "traceid", "123456")
-	log.WithContext(ctx).Info(time.Now())
+	WithContext(ctx).Info(time.Now())
 }
 
 func TestTime(t *testing.T) {
