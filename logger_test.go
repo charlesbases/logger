@@ -115,6 +115,21 @@ func TestFileWriter(t *testing.T) {
 	select {}
 }
 
+func TestFileWriterBench(t *testing.T) {
+	SetDefault(func(o *Options) {
+		o.Writer = filewriter.New()
+	})
+
+	bench(func(id int) {
+		Debug(now())
+		Info(now())
+		Warn(now())
+		Error(now())
+	})
+
+	<-time.After(time.Second * 1)
+}
+
 func TestBase(t *testing.T) {
 	var loop int = 1e4
 

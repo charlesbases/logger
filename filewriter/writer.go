@@ -43,7 +43,6 @@ type fileWriter struct {
 	// currentFileExpireAt log file expire time
 	currentFileExpireAt time.Time
 
-	// lock zap 的日志输出流是线程安全的，此处的 lock 是防止零点时刻进行日志备份时，正确写入新的日志文件
 	lock sync.Mutex
 }
 
@@ -55,7 +54,7 @@ func (fw *fileWriter) Write(p []byte) (int, error) {
 	fw.currentTime = time.Now()
 
 	// needs to roll
-	if !fw.currentFileExpireAt.IsZero() && !fw.currentTime.Before(fw.currentFileExpireAt) {
+	if fw.currentFileWriter != nil && !fw.currentTime.Before(fw.currentFileExpireAt) {
 		if err := fw.rolling(); err != nil {
 			return 0, err
 		}
@@ -137,7 +136,7 @@ func (fw *fileWriter) create() error {
 	}
 
 	fw.currentFileWriter = file
-	fw.currentFileCreateAt = midnight(time.Now())
+	fw.currentFileCreateAt = midnight(time.Now(), 0)
 	fw.currentFileExpireAt = midnight(fw.currentFileCreateAt, 1)
 	return nil
 }
@@ -199,10 +198,6 @@ func date(t time.Time) string {
 }
 
 // midnight 零点时间
-func midnight(t time.Time, days ...int) time.Time {
-	var day int
-	if len(days) != 0 {
-		day = days[0]
-	}
-	return time.Date(t.Year(), t.Month(), t.Day()+day, 0, 0, 0, 0, t.Location())
+func midnight(t time.Time, offset int) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day()+offset, 0, 0, 0, 0, t.Location())
 }

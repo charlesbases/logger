@@ -17,37 +17,21 @@ const (
 	minlevel = debugLevel
 )
 
+var renderFunc = func(sf func(v ...interface{}) string, v string) func(b bool) string {
+	return func(b bool) string {
+		if b {
+			return sf(v)
+		}
+		return v
+	}
+}
+
 var render = map[zapcore.Level]func(b bool) string{
-	zapcore.DebugLevel: func(b bool) string {
-		if b {
-			return colors.PurpleSprint("DBG")
-		}
-		return "DBG"
-	},
-	zapcore.InfoLevel: func(b bool) string {
-		if b {
-			return colors.GreenSprint("INF")
-		}
-		return "INF"
-	},
-	zapcore.WarnLevel: func(b bool) string {
-		if b {
-			return colors.BlueSprint("WRN")
-		}
-		return "WRN"
-	},
-	zapcore.ErrorLevel: func(b bool) string {
-		if b {
-			return colors.RedSprint("ERR")
-		}
-		return "ERR"
-	},
-	zapcore.FatalLevel: func(b bool) string {
-		if b {
-			return colors.RedSprint("FAT")
-		}
-		return "FAT"
-	},
+	zapcore.DebugLevel: renderFunc(colors.PurpleSprint, "DBG"),
+	zapcore.InfoLevel:  renderFunc(colors.GreenSprint, "INF"),
+	zapcore.WarnLevel:  renderFunc(colors.BlueSprint, "WRN"),
+	zapcore.ErrorLevel: renderFunc(colors.RedSprint, "ERR"),
+	zapcore.FatalLevel: renderFunc(colors.RedSprint, "FAT"),
 }
 
 var string2level = map[string]level{
