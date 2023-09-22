@@ -34,13 +34,13 @@ type fileWriter struct {
 	// fullName log file name of abs
 	fullName string
 
-	// currentTime .
+	// currentTime now
 	currentTime time.Time
 	// currentFileWriter os.File of log
 	currentFileWriter *os.File
-	// currentFileCreateAt log file create time
+	// currentFileCreateAt lof file creation date
 	currentFileCreateAt time.Time
-	// currentFileExpireAt log file expire time
+	// currentFileExpireAt lof file expiration date
 	currentFileExpireAt time.Time
 
 	lock sync.Mutex
@@ -96,8 +96,8 @@ func (fw *fileWriter) rolling() error {
 }
 
 // rename .
-func (fw *fileWriter) rename(t time.Time) error {
-	return os.Rename(fw.fullName, filepath.Join(fw.folderName, strings.Join([]string{fw.fileName, date(t)}, ".")))
+func (fw *fileWriter) rename(timeSuffix time.Time) error {
+	return os.Rename(fw.fullName, filepath.Join(fw.folderName, strings.Join([]string{fw.fileName, timeString(timeSuffix)}, ".")))
 }
 
 // open .
@@ -116,9 +116,7 @@ func (fw *fileWriter) open() error {
 	}
 
 	// 是否为当天日志文件
-	if fileInfo.ModTime().Day() != fw.currentTime.Day() ||
-		fileInfo.ModTime().Year() != fw.currentTime.Year() ||
-		fileInfo.ModTime().Month() != fw.currentTime.Month() {
+	if !timeMidnight(fw.currentTime, 0).Equal(timeMidnight(fileInfo.ModTime(), 0)) {
 		if err := fw.rename(fileInfo.ModTime()); err != nil {
 			return err
 		}
@@ -136,8 +134,8 @@ func (fw *fileWriter) create() error {
 	}
 
 	fw.currentFileWriter = file
-	fw.currentFileCreateAt = midnight(time.Now(), 0)
-	fw.currentFileExpireAt = midnight(fw.currentFileCreateAt, 1)
+	fw.currentFileCreateAt = fw.currentTime
+	fw.currentFileExpireAt = timeMidnight(fw.currentTime, 1)
 	return nil
 }
 
@@ -148,7 +146,7 @@ func (fw *fileWriter) tidy() error {
 		return errors.Wrap(err, "open folder")
 	}
 
-	oldest := fw.oldest()
+	oldest := timeMidnight(fw.currentTime, -fw.maxRolls)
 
 	for _, entry := range src {
 		if !entry.IsDir() && len(entry.Name()) != len(fw.fileName) && strings.HasPrefix(entry.Name(), fw.fileName) {
@@ -163,11 +161,6 @@ func (fw *fileWriter) tidy() error {
 		}
 	}
 	return nil
-}
-
-// oldest return fileWriter.currentTime - fileWriter.maxRolls * time.Hour * 24
-func (fw *fileWriter) oldest() time.Time {
-	return midnight(fw.currentTime, -fw.maxRolls)
 }
 
 // New .
@@ -192,12 +185,12 @@ func New(opts ...func(o *options)) *fileWriter {
 	}
 }
 
-// date .
-func date(t time.Time) string {
+// timeString .
+func timeString(t time.Time) string {
 	return t.Format(defaultDateLayou)
 }
 
-// midnight 零点时间
-func midnight(t time.Time, offset int) time.Time {
+// timeMidnight 零点时间
+func timeMidnight(t time.Time, offset int) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day()+offset, 0, 0, 0, 0, t.Location())
 }
