@@ -91,7 +91,6 @@ func (fw *fileWriter) rolling() error {
 		return err
 	}
 
-	go fw.tidy()
 	return nil
 }
 
@@ -120,7 +119,6 @@ func (fw *fileWriter) open() error {
 		if err := fw.rename(fileInfo.ModTime()); err != nil {
 			return err
 		}
-		go fw.tidy()
 	}
 
 	return fw.create()
@@ -128,6 +126,8 @@ func (fw *fileWriter) open() error {
 
 // create .
 func (fw *fileWriter) create() error {
+	go fw.tidy()
+
 	file, err := os.OpenFile(fw.fullName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, defaultFilePermissions)
 	if err != nil {
 		return errors.Wrap(err, "open file")
@@ -144,6 +144,9 @@ func (fw *fileWriter) tidy() error {
 	src, err := os.ReadDir(fw.folderName)
 	if err != nil {
 		return errors.Wrap(err, "open folder")
+	}
+	if len(src) == 0 {
+		return nil
 	}
 
 	oldest := timeMidnight(fw.currentTime, -fw.maxRolls)
