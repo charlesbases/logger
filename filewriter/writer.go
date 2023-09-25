@@ -11,10 +11,6 @@ import (
 )
 
 const (
-	// defaultMaxRolls 日志保留时间
-	defaultMaxRolls = 7
-	// defaultPath default file path
-	defaultPath = "./logs/log"
 	// defaultFilePermissions default file permissions
 	defaultFilePermissions = 0666
 	// defaultFolderPermissions default folder prmissions
@@ -167,21 +163,14 @@ func (fw *fileWriter) tidy() error {
 }
 
 // New .
-func New(opts ...func(o *options)) *fileWriter {
-	options := &options{
-		output:   defaultPath,
-		maxrolls: defaultMaxRolls,
-	}
+func New(opts ...func(o *Options)) *fileWriter {
+	options := configuration(opts...)
 
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	fullpath, _ := filepath.Abs(options.output)
+	fullpath, _ := filepath.Abs(options.FilePath)
 	folderName, fileName := filepath.Split(fullpath)
 
 	return &fileWriter{
-		maxRolls:   options.maxrolls,
+		maxRolls:   options.MaxRolls,
 		folderName: folderName,
 		fileName:   fileName,
 		fullName:   fullpath,

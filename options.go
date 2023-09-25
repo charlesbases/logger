@@ -33,12 +33,11 @@ type Options struct {
 	minlevel level
 }
 
-// option .
-func option(opts ...func(o *Options)) *Options {
+// configuration .
+func configuration(opts ...func(o *Options)) *Options {
 	var options = &Options{Skip: defaultCallerSkip, minlevel: minlevel}
 	for _, opt := range opts {
 		opt(options)
-		break
 	}
 	if len(options.MinLevel) != 0 {
 		if minlevel, found := string2level[options.MinLevel]; found {

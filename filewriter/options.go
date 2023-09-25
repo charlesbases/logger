@@ -1,27 +1,33 @@
 package filewriter
 
-// options .
-type options struct {
-	// output 日志文件路径
-	output string
-	// maxrolls 日志文件保留天数
-	maxrolls int
+const (
+	// defaultMaxRolls 日志保留时间
+	defaultMaxRolls = 7
+	// defaultFilePath default file path
+	defaultFilePath = "./logs/log"
+)
+
+// Options .
+type Options struct {
+	// FilePath 日志文件路径
+	FilePath string
+	// MaxRolls 日志文件保留天数
+	MaxRolls int
 }
 
-// Path .
-func Path(file string) func(o *options) {
-	return func(o *options) {
-		if len(file) != 0 {
-			o.output = file
-		}
+// configuration .
+func configuration(opts ...func(o *Options)) *Options {
+	var options = new(Options)
+	for _, opt := range opts {
+		opt(options)
 	}
-}
 
-// MaxRolls .
-func MaxRolls(days int) func(o *options) {
-	return func(o *options) {
-		if days != 0 {
-			o.maxrolls = days
-		}
+	if len(options.FilePath) == 0 {
+		options.FilePath = defaultFilePath
 	}
+	if options.MaxRolls < 1 {
+		options.MaxRolls = defaultMaxRolls
+	}
+
+	return options
 }

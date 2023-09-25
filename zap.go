@@ -31,7 +31,7 @@ func warp(v string) string {
 
 // New .
 func New(opts ...func(o *Options)) *Logger {
-	var options = option(opts...)
+	var options = configuration(opts...)
 
 	// 编码器
 	encodercfg := zap.NewProductionEncoderConfig()
@@ -91,7 +91,7 @@ func (log *Logger) WithContext(ctx context.Context) *Logger {
 // Named 修改 name
 // 注意：是修改，而不是 zap.Logger.Named() 的追加 name
 func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
-	if name == "" {
+	if len(name) == 0 {
 		return log
 	}
 	var options = new(Options)
