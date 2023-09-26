@@ -1,8 +1,11 @@
 package filewriter
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -15,8 +18,10 @@ const (
 	defaultFilePermissions = 0666
 	// defaultFolderPermissions default folder prmissions
 	defaultFolderPermissions = 0775
-	// defaultDateLayou format layou
-	defaultDateLayou = "2006-01-02"
+	// defaultSuffixFormat the date suffix of the log file
+	defaultSuffixFormat = "2006-01-02"
+	// defaultFormatLayou format layou
+	defaultFormatLayou = "2006-01-02 15:04:05.000"
 )
 
 // fileWriter is used to write to a file.
@@ -47,6 +52,15 @@ func (fw *fileWriter) Write(p []byte) (int, error) {
 	fw.lock.Lock()
 	defer fw.lock.Unlock()
 
+	n, err := fw.write(p)
+	if err != nil {
+		stderr(err)
+	}
+	return n, nil
+}
+
+// write .
+func (fw *fileWriter) write(p []byte) (int, error) {
 	fw.currentTime = time.Now()
 
 	// needs to roll
@@ -97,10 +111,6 @@ func (fw *fileWriter) rename(timeSuffix time.Time) error {
 
 // open .
 func (fw *fileWriter) open() error {
-	if err := os.MkdirAll(fw.folderName, defaultFolderPermissions); err != nil {
-		return errors.Wrap(err, "mkdir folder")
-	}
-
 	fileInfo, err := os.Stat(fw.fullName)
 	if err != nil {
 		// 文件不存在，则直接创建新文件
@@ -151,7 +161,7 @@ func (fw *fileWriter) tidy() error {
 		if !entry.IsDir() && len(entry.Name()) != len(fw.fileName) && strings.HasPrefix(entry.Name(), fw.fileName) {
 			if suffix := filepath.Ext(entry.Name()); len(suffix) != 0 {
 				suffix = suffix[1:]
-				if t, err := time.ParseInLocation(defaultDateLayou, suffix, fw.currentTime.Location()); err == nil {
+				if t, err := time.ParseInLocation(defaultSuffixFormat, suffix, fw.currentTime.Location()); err == nil {
 					if t.Before(oldest) {
 						os.Remove(filepath.Join(fw.folderName, entry.Name()))
 					}
@@ -163,11 +173,20 @@ func (fw *fileWriter) tidy() error {
 }
 
 // New .
-func New(opts ...func(o *Options)) *fileWriter {
+func New(opts ...func(o *Options)) io.Writer {
 	options := configuration(opts...)
 
-	fullpath, _ := filepath.Abs(options.FilePath)
+	fullpath, err := filepath.Abs(options.FilePath)
+	if err != nil {
+		stderr(err)
+		return nil
+	}
+
 	folderName, fileName := filepath.Split(fullpath)
+	if err := os.MkdirAll(folderName, defaultFolderPermissions); err != nil {
+		stderr(err)
+		return nil
+	}
 
 	return &fileWriter{
 		maxRolls:   options.MaxRolls,
@@ -179,10 +198,25 @@ func New(opts ...func(o *Options)) *fileWriter {
 
 // timeString .
 func timeString(t time.Time) string {
-	return t.Format(defaultDateLayou)
+	return t.Format(defaultSuffixFormat)
 }
 
 // timeMidnight 零点时间
 func timeMidnight(t time.Time, offset int) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day()+offset, 0, 0, 0, 0, t.Location())
+}
+
+// stderr .
+func stderr(err error) {
+	if err != nil {
+		fmt.Printf("[%s] \033[31mERR\033[0m %s %v\n", time.Now().Format(defaultFormatLayou), caller(), err)
+	}
+}
+
+// caller .
+func caller() string {
+	if _, file, line, ok := runtime.Caller(1); ok {
+		return fmt.Sprintf(`%s/%s:%d`, filepath.Base(filepath.Dir(file)), filepath.Base(file), line)
+	}
+	return "undefined"
 }
