@@ -1,5 +1,10 @@
 package filewriter
 
+import (
+	"os"
+	"path/filepath"
+)
+
 const (
 	// defaultMaxRolls 日志保留时间
 	defaultMaxRolls = 7
@@ -13,6 +18,26 @@ type Options struct {
 	FilePath string
 	// MaxRolls 日志文件保留天数
 	MaxRolls int
+}
+
+// fileWriter .
+func (opts *Options) fileWriter() (*fileWriter, error) {
+	fullpath, err := filepath.Abs(opts.FilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	folderName, fileName := filepath.Split(fullpath)
+	if err := os.MkdirAll(folderName, defaultFolderPermissions); err != nil {
+		return nil, err
+	}
+
+	return &fileWriter{
+		maxRolls:   opts.MaxRolls,
+		folderName: folderName,
+		fileName:   fileName,
+		fullName:   fullpath,
+	}, nil
 }
 
 // configuration .

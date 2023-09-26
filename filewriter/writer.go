@@ -9,8 +9,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -136,7 +134,7 @@ func (fw *fileWriter) create() error {
 
 	file, err := os.OpenFile(fw.fullName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, defaultFilePermissions)
 	if err != nil {
-		return errors.Wrap(err, "open file")
+		return err
 	}
 
 	fw.currentFileWriter = file
@@ -149,7 +147,7 @@ func (fw *fileWriter) create() error {
 func (fw *fileWriter) tidy() error {
 	src, err := os.ReadDir(fw.folderName)
 	if err != nil {
-		return errors.Wrap(err, "open folder")
+		return err
 	}
 	if len(src) == 0 {
 		return nil
@@ -174,26 +172,12 @@ func (fw *fileWriter) tidy() error {
 
 // New .
 func New(opts ...func(o *Options)) io.Writer {
-	options := configuration(opts...)
-
-	fullpath, err := filepath.Abs(options.FilePath)
+	fileWriter, err := configuration(opts...).fileWriter()
 	if err != nil {
 		stderr(err)
 		return nil
 	}
-
-	folderName, fileName := filepath.Split(fullpath)
-	if err := os.MkdirAll(folderName, defaultFolderPermissions); err != nil {
-		stderr(err)
-		return nil
-	}
-
-	return &fileWriter{
-		maxRolls:   options.MaxRolls,
-		folderName: folderName,
-		fileName:   fileName,
-		fullName:   fullpath,
-	}
+	return fileWriter
 }
 
 // timeString .
