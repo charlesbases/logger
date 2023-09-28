@@ -163,9 +163,13 @@ func TestContextHook(t *testing.T) {
 
 func TestTime(t *testing.T) {
 	// samples: 10
-	// minimum: 291.569ms
-	// maximum: 424.6169ms
-	// average: 309.05249ms
+	// minimum: 85.3831ms
+	// maximum: 108.6627ms
+	// average: 92.53763ms
+	SetDefault(func(o *Options) {
+		o.Writer = filewriter.New()
+	})
+
 	bench(func(i int) {
 		log := Named(strconv.Itoa(i))
 		log.Info(i)
