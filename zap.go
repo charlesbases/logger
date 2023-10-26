@@ -26,7 +26,7 @@ func warp(v string) string {
 		b.WriteString("]")
 		return b.String()
 	}
-	return v
+	return ""
 }
 
 // New .
@@ -56,7 +56,7 @@ func New(opts ...func(o *Options)) *Logger {
 		core = zapcore.NewTee([]zapcore.Core{core, zapcore.NewCore(encoder, zapcore.AddSync(options.Writer), level)}...)
 	}
 
-	base := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.Skip))
+	base := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.CallerSkip))
 	sugared := base.Sugar()
 
 	if len(options.Name) != 0 {
@@ -90,21 +90,12 @@ func (log *Logger) WithContext(ctx context.Context) *Logger {
 
 // Named 修改 name
 // 注意：是修改，而不是 zap.Logger.Named() 的追加 name
-func (log *Logger) Named(name string, opts ...func(o *Options)) *Logger {
+func (log *Logger) Named(name string) *Logger {
 	if len(name) == 0 {
 		return log
 	}
-	var options = new(Options)
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	sugared := log.base.Sugar().Named(warp(name))
-	if options.Skip != 0 {
-		sugared = sugared.WithOptions(zap.AddCallerSkip(options.Skip))
-	}
 	return log.clone(func(copylog *Logger) {
-		copylog.sugared = sugared
+		copylog.sugared = log.base.Sugar().Named(warp(name))
 	})
 }
 

@@ -27,8 +27,8 @@ func WithContext(ctx context.Context) *Logger {
 }
 
 // Named .
-func Named(name string, opts ...func(o *Options)) *Logger {
-	return logger.Named(name, opts...)
+func Named(name string) *Logger {
+	return logger.Named(name)
 }
 
 // Flush .

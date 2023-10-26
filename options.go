@@ -19,8 +19,8 @@ type ContextHook func(ctx context.Context) func(l *Logger) *Logger
 type Options struct {
 	// Name 名称
 	Name string
-	// Skip 跳过的调用者数量
-	Skip int
+	// CallerSkip 跳过的调用者数量
+	CallerSkip int
 	// MinLevel 允许的最小日志级别. default: "debug"
 	MinLevel string
 	// Colourful 日志级别多彩显示
@@ -35,7 +35,7 @@ type Options struct {
 
 // configuration .
 func configuration(opts ...func(o *Options)) *Options {
-	var options = &Options{Skip: defaultCallerSkip, minlevel: minlevel}
+	var options = &Options{CallerSkip: defaultCallerSkip, minlevel: minlevel}
 	for _, opt := range opts {
 		opt(options)
 	}

@@ -2,12 +2,9 @@ package logger
 
 import (
 	"context"
-	"fmt"
-	"strconv"
+	"sync"
 	"testing"
 	"time"
-
-	"github.com/charlesbases/logger/filewriter"
 )
 
 // now .
@@ -15,134 +12,27 @@ func now() string {
 	return time.Now().Format(defaultDateFormat)
 }
 
-func TestMultipleLogger(t *testing.T) {
-	Debug("Base logger")
+func TestDefault(t *testing.T) {
+	Debug("none")
 
 	SetDefault(func(o *Options) {
-		o.Name = "Default"
-		o.Writer = filewriter.New()
+		o.Name = "default"
 	})
-	Debug("SetDefault logger")
+	Debug("default")
 
-	newl := New(func(o *Options) {
-		o.Name = "New"
-		o.Writer = filewriter.New()
-	})
-	newl.Debug("New logger")
-
-	newl.Flush()
-}
-
-func TestNewLogger(t *testing.T) {
-	var loop int = 1e4
-
-	logger := New(func(o *Options) {
-		o.Name = "New"
-	})
-
-	var start = time.Now()
-	for i := 0; i < loop; i++ {
-		logger.Debug(now())
-		logger.Info(now())
-		logger.Warn(now())
-		logger.Error(now())
-	}
-	fmt.Println(time.Since(start))
-
-	<-time.After(time.Second * 1)
+	named := Named("writer")
+	named.Debug("default with file writer")
 }
 
 func TestCaller(t *testing.T) {
-	// default
-	{
-		SetDefault(func(o *Options) { o.Name = "Default" })
-		Debug(59)
-		CallerSkip(0).Info(60)
+	a := Named("a")
+	b := a.Named("b")
+	c := b.Named("c")
 
-		a := Named("A")
-		a.Debug(63)
-		a.CallerSkip(0).Info(64)
-
-		b := a.Named("B")
-		b.Debug(67)
-		b.CallerSkip(0).Info(68)
-	}
-
-	// new
-	{
-		n := New(func(o *Options) { o.Name = "New" })
-		n.Error(74)
-		n.CallerSkip(0).Info(75)
-
-		a := n.Named("A")
-		a.Error(78)
-		a.CallerSkip(0).Info(79)
-
-		b := a.Named("B")
-		b.Error(82)
-		b.CallerSkip(0).Info(83)
-	}
-
-	print(86)
-}
-
-// print .
-func print(line int) {
-	a := Named("C", func(o *Options) { o.Skip = 1 })
-	a.Warn(line)
-
-	b := a.Named("", func(o *Options) { o.Skip = 1 })
-	b.Warn(line)
-}
-
-func TestFileWriter(t *testing.T) {
-	SetDefault(func(o *Options) {
-		o.Writer = filewriter.New()
-	})
-
-	for i := 0; i < 10; i++ {
-		go func() {
-			tk := time.NewTicker(time.Second)
-			for {
-				select {
-				case <-tk.C:
-					Info(now())
-				}
-			}
-		}()
-	}
-
-	select {}
-}
-
-func TestFileWriterBench(t *testing.T) {
-	SetDefault(func(o *Options) {
-		o.Writer = filewriter.New()
-	})
-
-	bench(func(id int) {
-		Debug(now())
-		Info(now())
-		Warn(now())
-		Error(now())
-	})
-
-	<-time.After(time.Second * 1)
-}
-
-func TestBase(t *testing.T) {
-	var loop int = 1e4
-
-	var start = time.Now()
-	for i := 0; i < loop; i++ {
-		Debug(now())
-		Info(now())
-		Warn(now())
-		Error(now())
-	}
-	fmt.Println(time.Since(start))
-
-	<-time.After(time.Second * 1)
+	Info("default")
+	a.Info("a")
+	b.Info("b")
+	c.Info("c")
 }
 
 func TestContextHook(t *testing.T) {
@@ -161,48 +51,39 @@ func TestContextHook(t *testing.T) {
 	WithContext(ctx).Info(time.Now())
 }
 
-func TestTime(t *testing.T) {
-	// samples: 10
-	// minimum: 85.3831ms
-	// maximum: 108.6627ms
-	// average: 92.53763ms
-	SetDefault(func(o *Options) {
-		o.Writer = filewriter.New()
-	})
-
-	bench(func(i int) {
-		log := Named(strconv.Itoa(i))
-		log.Info(i)
-	})
-}
-
-func bench(fn func(id int)) {
-	var number, count = 10000, 10
-
-	var min, max, total time.Duration
-	for i := 0; i < count; i++ {
-		start := time.Now()
-		for i := 0; i < number; i++ {
-			fn(i)
-		}
-		sub := time.Since(start)
-
-		switch {
-		case max == 0:
-			max = sub
-			min = sub
-		case sub > max:
-			max = sub
-		case sub < min:
-			min = sub
-		}
-
-		total += sub
+// BenchmarkLogger-16    	  110325	     12282 ns/op	    1824 B/op	      36 allocs/op
+func BenchmarkLogger(b *testing.B) {
+	var bench = func(f func()) {
+		b.ResetTimer()
+		f()
+		b.StopTimer()
 	}
 
-	fmt.Println("samples:", count)
-	fmt.Println("minimum:", min)
-	fmt.Println("maximum:", max)
-	fmt.Println("average:", total/time.Duration(count))
-	fmt.Println()
+	bench(func() {
+		wg := sync.WaitGroup{}
+		wg.Add(3)
+
+		go func() {
+			for i := 0; i < b.N; i++ {
+				Named("a").Info("aa")
+			}
+			wg.Done()
+		}()
+
+		go func() {
+			for i := 0; i < b.N; i++ {
+				Named("b").Info("bb")
+			}
+			wg.Done()
+		}()
+
+		go func() {
+			for i := 0; i < b.N; i++ {
+				Named("c").Info("cc")
+			}
+			wg.Done()
+		}()
+
+		wg.Wait()
+	})
 }
