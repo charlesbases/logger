@@ -2,86 +2,86 @@ package logger
 
 import "context"
 
-var logger *Logger
+var base *Logger
 
 func init() {
-	logger = New()
+	base = New()
 }
 
 // SetDefault .
 func SetDefault(opts ...func(o *Options)) {
-	if logger != nil {
-		logger.Flush()
+	if base != nil {
+		base.Flush()
 	}
-	logger = New(opts...)
+	base = New(opts...)
 }
 
 // CallerSkip .
 func CallerSkip(skip int) *Logger {
-	return logger.CallerSkip(skip)
+	return base.CallerSkip(skip)
 }
 
 // WithContext .
 func WithContext(ctx context.Context) *Logger {
-	return logger.WithContext(ctx)
+	return base.WithContext(ctx)
 }
 
 // Named .
 func Named(name string) *Logger {
-	return logger.Named(name)
+	return base.Named(name)
 }
 
 // Flush .
 func Flush() {
-	logger.Flush()
+	base.Flush()
 }
 
 // Debug .
 func Debug(v ...interface{}) {
-	logger.sugared.Debug(v...)
+	base.sugared.Debug(v...)
 }
 
 // Debugf .
 func Debugf(format string, params ...interface{}) {
-	logger.sugared.Debugf(format, params...)
+	base.sugared.Debugf(format, params...)
 }
 
 // Info .
 func Info(v ...interface{}) {
-	logger.sugared.Info(v...)
+	base.sugared.Info(v...)
 }
 
 // Infof .
 func Infof(format string, params ...interface{}) {
-	logger.sugared.Infof(format, params...)
+	base.sugared.Infof(format, params...)
 }
 
 // Warn .
 func Warn(v ...interface{}) {
-	logger.sugared.Warn(v...)
+	base.sugared.Warn(v...)
 }
 
 // Warnf .
 func Warnf(format string, params ...interface{}) {
-	logger.sugared.Warnf(format, params...)
+	base.sugared.Warnf(format, params...)
 }
 
 // Error .
 func Error(v ...interface{}) {
-	logger.sugared.Error(v...)
+	base.sugared.Error(v...)
 }
 
 // Errorf .
 func Errorf(format string, params ...interface{}) {
-	logger.sugared.Errorf(format, params...)
+	base.sugared.Errorf(format, params...)
 }
 
 // Fatal .
 func Fatal(v ...interface{}) {
-	logger.sugared.Fatal(v...)
+	base.sugared.Fatal(v...)
 }
 
 // Fatalf .
 func Fatalf(format string, params ...interface{}) {
-	logger.sugared.Fatalf(format, params...)
+	base.sugared.Fatalf(format, params...)
 }

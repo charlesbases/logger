@@ -75,9 +75,12 @@ func (log *Logger) clone(opt func(copylog *Logger)) *Logger {
 
 // CallerSkip 添加调用层
 func (log *Logger) CallerSkip(skip int) *Logger {
-	return log.clone(func(copylog *Logger) {
-		copylog.sugared = log.sugared.WithOptions(zap.AddCallerSkip(skip))
-	})
+	if skip != 0 {
+		return log.clone(func(copylog *Logger) {
+			copylog.sugared = log.sugared.WithOptions(zap.AddCallerSkip(skip))
+		})
+	}
+	return log
 }
 
 // WithContext return new Logger with context
@@ -91,12 +94,12 @@ func (log *Logger) WithContext(ctx context.Context) *Logger {
 // Named 修改 name
 // 注意：是修改，而不是 zap.Logger.Named() 的追加 name
 func (log *Logger) Named(name string) *Logger {
-	if len(name) == 0 {
-		return log
+	if len(name) != 0 {
+		return log.clone(func(copylog *Logger) {
+			copylog.sugared = log.base.Sugar().Named(warp(name))
+		})
 	}
-	return log.clone(func(copylog *Logger) {
-		copylog.sugared = log.base.Sugar().Named(warp(name))
-	})
+	return log
 }
 
 // Flush .

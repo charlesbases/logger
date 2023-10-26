@@ -25,14 +25,27 @@ func TestDefault(t *testing.T) {
 }
 
 func TestCaller(t *testing.T) {
-	a := Named("a")
-	b := a.Named("b")
-	c := b.Named("c")
-
+	// default
 	Info("default")
+
+	// SetDefault
+	SetDefault()
+	Info("SetDefault")
+
+	// Named
+	a := Named("a")
 	a.Info("a")
+
+	b := a.Named("b")
 	b.Info("b")
-	c.Info("c")
+
+	// CakkerSkip
+	testCallerSkip(b)
+}
+
+// testCallerSkip .
+func testCallerSkip(l *Logger) {
+	l.Named("c").CallerSkip(1).Info("c")
 }
 
 func TestContextHook(t *testing.T) {
