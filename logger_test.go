@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/charlesbases/logger/filewriter"
 )
 
 var hook ContextHook = func(ctx context.Context) func(l *Logger) *Logger {
@@ -46,8 +48,8 @@ func TestDefault(t *testing.T) {
 }
 
 func TestCaller(t *testing.T) {
-	t.Run("base", func(t *testing.T) {
-		Info("base")
+	t.Run("defaultLogger", func(t *testing.T) {
+		Info("defaultLogger")
 		baseCallerSkip()
 
 		a := Named("a")
@@ -95,7 +97,7 @@ func BenchmarkBase(b *testing.B) {
 		b.StopTimer()
 	}
 
-	b.Run("base", func(b *testing.B) {
+	b.Run("defaultLogger", func(b *testing.B) {
 		b.Run("named", func(b *testing.B) {
 			bench(func() {
 				Named("a").Info("a")
@@ -150,7 +152,8 @@ func BenchmarkDefault(b *testing.B) {
 	})
 }
 
-// Benchmark    	    1704	    875271 ns/op	  126242 B/op	    2506 allocs/op
+// (filewrite)       	     829	   1646762 ns/op	  129959 B/op	    3508 allocs/op
+// (non-filewrite)    	    1686	    820628 ns/op	  103639 B/op	    2304 allocs/op
 func Benchmark(b *testing.B) {
 	var count = 100
 	var bench = func(f func()) {
@@ -172,6 +175,7 @@ func Benchmark(b *testing.B) {
 	SetDefault(func(o *Options) {
 		o.Name = "default"
 		o.ContextHook = hook
+		o.Writer = filewriter.New()
 	})
 
 	bench(func() {

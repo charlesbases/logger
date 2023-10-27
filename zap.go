@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -11,8 +12,9 @@ import (
 
 // Logger .
 type Logger struct {
-	hook    ContextHook
-	base    *zap.Logger
+	pool *sync.Pool
+	hook ContextHook
+
 	sugared *zap.SugaredLogger
 }
 
@@ -56,29 +58,29 @@ func New(opts ...func(o *Options)) *Logger {
 		core = zapcore.NewTee([]zapcore.Core{core, zapcore.NewCore(encoder, zapcore.AddSync(options.Writer), level)}...)
 	}
 
-	base := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.CallerSkip))
-	sugared := base.Sugar()
-
-	if len(options.Name) != 0 {
-		sugared = sugared.Named(wrap(options.Name))
-	}
-
-	return &Logger{hook: options.ContextHook, base: base, sugared: sugared}
+	sugared := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.CallerSkip)).Sugar()
+	return &Logger{
+		pool: &sync.Pool{
+			New: func() interface{} {
+				return sugared
+			},
+		},
+		hook:    options.ContextHook,
+		sugared: sugared.Named(wrap(options.Name))}
 }
 
 // clone .
-func (log *Logger) clone(opt func(copylog *Logger)) *Logger {
+func (log *Logger) clone() *Logger {
 	var copylog = *log
-	opt(&copylog)
 	return &copylog
 }
 
 // CallerSkip 添加调用层
 func (log *Logger) CallerSkip(skip int) *Logger {
 	if skip != 0 {
-		return log.clone(func(copylog *Logger) {
-			copylog.sugared = log.sugared.WithOptions(zap.AddCallerSkip(skip))
-		})
+		l := log.clone()
+		l.sugared = log.sugared.WithOptions(zap.AddCallerSkip(skip))
+		return l
 	}
 	return log
 }
@@ -95,9 +97,11 @@ func (log *Logger) WithContext(ctx context.Context) *Logger {
 // 注意：是修改，而不是 zap.Logger.Named() 的追加 name
 func (log *Logger) Named(name string) *Logger {
 	if len(name) != 0 {
-		return log.clone(func(copylog *Logger) {
-			copylog.sugared = log.base.Sugar().Named(wrap(name))
-		})
+		l := log.clone()
+		base := l.pool.Get().(*zap.SugaredLogger)
+		l.sugared = base.Named(wrap(name))
+		l.pool.Put(base)
+		return l
 	}
 	return log
 }

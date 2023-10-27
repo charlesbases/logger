@@ -2,86 +2,82 @@ package logger
 
 import "context"
 
-var base *Logger
-
-func init() {
-	base = New()
-}
+var defaultLogger = New()
 
 // SetDefault .
 func SetDefault(opts ...func(o *Options)) {
-	if base != nil {
-		base.Flush()
+	if defaultLogger != nil {
+		defaultLogger.Flush()
 	}
-	base = New(opts...)
+	defaultLogger = New(opts...)
 }
 
 // CallerSkip .
 func CallerSkip(skip int) *Logger {
-	return base.CallerSkip(skip)
+	return defaultLogger.CallerSkip(skip)
 }
 
 // WithContext .
 func WithContext(ctx context.Context) *Logger {
-	return base.WithContext(ctx)
+	return defaultLogger.WithContext(ctx)
 }
 
 // Named .
 func Named(name string) *Logger {
-	return base.Named(name)
+	return defaultLogger.Named(name)
 }
 
 // Flush .
 func Flush() {
-	base.Flush()
+	defaultLogger.Flush()
 }
 
 // Debug .
 func Debug(v ...interface{}) {
-	base.sugared.Debug(v...)
+	defaultLogger.sugared.Debug(v...)
 }
 
 // Debugf .
 func Debugf(format string, params ...interface{}) {
-	base.sugared.Debugf(format, params...)
+	defaultLogger.sugared.Debugf(format, params...)
 }
 
 // Info .
 func Info(v ...interface{}) {
-	base.sugared.Info(v...)
+	defaultLogger.sugared.Info(v...)
 }
 
 // Infof .
 func Infof(format string, params ...interface{}) {
-	base.sugared.Infof(format, params...)
+	defaultLogger.sugared.Infof(format, params...)
 }
 
 // Warn .
 func Warn(v ...interface{}) {
-	base.sugared.Warn(v...)
+	defaultLogger.sugared.Warn(v...)
 }
 
 // Warnf .
 func Warnf(format string, params ...interface{}) {
-	base.sugared.Warnf(format, params...)
+	defaultLogger.sugared.Warnf(format, params...)
 }
 
 // Error .
 func Error(v ...interface{}) {
-	base.sugared.Error(v...)
+	defaultLogger.sugared.Error(v...)
 }
 
 // Errorf .
 func Errorf(format string, params ...interface{}) {
-	base.sugared.Errorf(format, params...)
+	defaultLogger.sugared.Errorf(format, params...)
 }
 
 // Fatal .
 func Fatal(v ...interface{}) {
-	base.sugared.Fatal(v...)
+	defaultLogger.sugared.Fatal(v...)
 }
 
 // Fatalf .
 func Fatalf(format string, params ...interface{}) {
-	base.sugared.Fatalf(format, params...)
+	defaultLogger.sugared.Fatalf(format, params...)
 }
