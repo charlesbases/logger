@@ -16,8 +16,8 @@ type Logger struct {
 	sugared *zap.SugaredLogger
 }
 
-// warp .
-func warp(v string) string {
+// wrap .
+func wrap(v string) string {
 	if len(v) != 0 {
 		var b strings.Builder
 		b.Grow(len(v) + 2)
@@ -35,7 +35,7 @@ func New(opts ...func(o *Options)) *Logger {
 
 	// 编码器
 	encodercfg := zap.NewProductionEncoderConfig()
-	encodercfg.EncodeTime = zapcore.TimeEncoderOfLayout(warp(defaultDateFormat))
+	encodercfg.EncodeTime = zapcore.TimeEncoderOfLayout(wrap(defaultDateFormat))
 	encodercfg.EncodeLevel = func(level zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
 		encoder.AppendString(shortName(level)(options.Colourful))
 	}
@@ -60,7 +60,7 @@ func New(opts ...func(o *Options)) *Logger {
 	sugared := base.Sugar()
 
 	if len(options.Name) != 0 {
-		sugared = sugared.Named(warp(options.Name))
+		sugared = sugared.Named(wrap(options.Name))
 	}
 
 	return &Logger{hook: options.ContextHook, base: base, sugared: sugared}
@@ -96,7 +96,7 @@ func (log *Logger) WithContext(ctx context.Context) *Logger {
 func (log *Logger) Named(name string) *Logger {
 	if len(name) != 0 {
 		return log.clone(func(copylog *Logger) {
-			copylog.sugared = log.base.Sugar().Named(warp(name))
+			copylog.sugared = log.base.Sugar().Named(wrap(name))
 		})
 	}
 	return log
