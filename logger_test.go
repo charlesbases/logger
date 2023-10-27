@@ -154,6 +154,9 @@ func BenchmarkDefault(b *testing.B) {
 
 // (filewrite)       	     829	   1646762 ns/op	  129959 B/op	    3508 allocs/op
 // (non-filewrite)    	    1686	    820628 ns/op	  103639 B/op	    2304 allocs/op
+//
+//go:generate go test -run Benchmark -test.bench -memprofile=mem.out .
+//go:generate go tool pprof -http :8080 mem.out
 func Benchmark(b *testing.B) {
 	var count = 100
 	var bench = func(f func()) {
