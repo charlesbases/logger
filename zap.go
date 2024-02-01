@@ -32,41 +32,44 @@ func wrap(v string) string {
 }
 
 // New .
-func New(opts ...func(o *Options)) *Logger {
+func New(opts ...option) *Logger {
 	var options = configuration(opts...)
 
 	// 编码器
 	encodercfg := zap.NewProductionEncoderConfig()
 	encodercfg.EncodeTime = zapcore.TimeEncoderOfLayout(wrap(defaultDateFormat))
 	encodercfg.EncodeLevel = func(level zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
-		encoder.AppendString(shortName(level)(options.Colourful))
+		encoder.AppendString(shortName(level)(options.colourful))
 	}
 	encodercfg.EncodeCaller = zapcore.ShortCallerEncoder
 	encodercfg.ConsoleSeparator = " "
 	encoder := zapcore.NewConsoleEncoder(encodercfg)
 
 	// 日志级别
-	level := zap.LevelEnablerFunc(func(lv zapcore.Level) bool {
-		return level(lv) >= options.minlevel
-	})
+	level := zap.LevelEnablerFunc(
+		func(lv zapcore.Level) bool {
+			return level(lv) >= options.minlevel
+		},
+	)
 
 	// output-console
 	core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level)
 
 	// output-writer
-	if options.Writer != nil {
-		core = zapcore.NewTee([]zapcore.Core{core, zapcore.NewCore(encoder, zapcore.AddSync(options.Writer), level)}...)
+	if options.writer != nil {
+		core = zapcore.NewTee([]zapcore.Core{core, zapcore.NewCore(encoder, zapcore.AddSync(options.writer), level)}...)
 	}
 
-	sugared := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.CallerSkip)).Sugar()
+	sugared := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.callerSkip)).Sugar()
 	return &Logger{
 		pool: &sync.Pool{
 			New: func() interface{} {
 				return sugared
 			},
 		},
-		hook:    options.ContextHook,
-		sugared: sugared.Named(wrap(options.Name))}
+		hook:    options.contextHook,
+		sugared: sugared.Named(wrap(options.name)),
+	}
 }
 
 // clone .
@@ -85,8 +88,8 @@ func (log *Logger) CallerSkip(skip int) *Logger {
 	return log
 }
 
-// WithContext return new Logger with context
-func (log *Logger) WithContext(ctx context.Context) *Logger {
+// Context return new Logger with context
+func (log *Logger) Context(ctx context.Context) *Logger {
 	if log.hook != nil {
 		return log.hook(ctx)(log)
 	}

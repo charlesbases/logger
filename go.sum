@@ -1,5 +1,5 @@
-github.com/charlesbases/colors v1.0.0 h1:yipPLvU2EzPdqf0cJ7T9LbDVuyBZk5/FbVz1BGGgu0g=
-github.com/charlesbases/colors v1.0.0/go.mod h1:mHiovrscf2OkVy47ZNAZYzM7FJhxQqk3ufTmBFX+0QA=
+github.com/charlesbases/colors v1.0.1 h1:malMP4C4lRjz7djPUkCiKxWLPIsiDDQrhRli0uWC9bQ=
+github.com/charlesbases/colors v1.0.1/go.mod h1:Ngvchup4I1cdv0pJt+TivwO7yIsUgaMN+RTUa8xyixE=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=

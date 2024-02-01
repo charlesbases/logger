@@ -5,8 +5,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/charlesbases/logger/filewriter"
 )
 
 var hook ContextHook = func(ctx context.Context) func(l *Logger) *Logger {
@@ -35,12 +33,15 @@ func loggerCallerSkip(log *Logger) {
 	log.CallerSkip(1).Info("caller skip")
 }
 
+func TestContextHook(t *testing.T) {
+	SetDefault(WithName("default"), WithContextHook(hook))
+	Context(ctx).Info("ctx")
+}
+
 func TestDefault(t *testing.T) {
 	Debug("none")
 
-	SetDefault(func(o *Options) {
-		o.Name = "default"
-	})
+	SetDefault(WithName("default"))
 	Debug("default")
 
 	named := Named("writer")
@@ -48,35 +49,36 @@ func TestDefault(t *testing.T) {
 }
 
 func TestCaller(t *testing.T) {
-	t.Run("defaultLogger", func(t *testing.T) {
-		Info("defaultLogger")
-		baseCallerSkip()
+	t.Run(
+		"defaultLogger", func(t *testing.T) {
+			Info("defaultLogger")
+			baseCallerSkip()
 
-		a := Named("a")
-		a.Info("a")
+			a := Named("a")
+			a.Info("a")
 
-		b := a.Named("b")
-		loggerCallerSkip(b)
-	})
+			b := a.Named("b")
+			loggerCallerSkip(b)
+		},
+	)
 
-	t.Run("default", func(t *testing.T) {
-		SetDefault(func(o *Options) {
-			o.Name = "default"
-			o.ContextHook = hook
-		})
+	t.Run(
+		"default", func(t *testing.T) {
+			SetDefault(WithName("default"), WithContextHook(hook))
 
-		Info("default")
-		baseCallerSkip()
-		WithContext(ctx).Info("context hook")
+			Info("default")
+			baseCallerSkip()
+			Context(ctx).Info("context hook")
 
-		a := Named("a")
-		a.Info("a")
-		a.WithContext(ctx).Info("context hook")
+			a := Named("a")
+			a.Info("a")
+			a.Context(ctx).Info("context hook")
 
-		b := a.Named("b")
-		loggerCallerSkip(b)
-		b.WithContext(ctx).Info("context hook")
-	})
+			b := a.Named("b")
+			loggerCallerSkip(b)
+			b.Context(ctx).Info("context hook")
+		},
+	)
 }
 
 func BenchmarkBase(b *testing.B) {
@@ -97,18 +99,28 @@ func BenchmarkBase(b *testing.B) {
 		b.StopTimer()
 	}
 
-	b.Run("defaultLogger", func(b *testing.B) {
-		b.Run("named", func(b *testing.B) {
-			bench(func() {
-				Named("a").Info("a")
-			})
-		})
-		b.Run("caller", func(b *testing.B) {
-			bench(func() {
-				baseCallerSkip()
-			})
-		})
-	})
+	b.Run(
+		"defaultLogger", func(b *testing.B) {
+			b.Run(
+				"named", func(b *testing.B) {
+					bench(
+						func() {
+							Named("a").Info("a")
+						},
+					)
+				},
+			)
+			b.Run(
+				"caller", func(b *testing.B) {
+					bench(
+						func() {
+							baseCallerSkip()
+						},
+					)
+				},
+			)
+		},
+	)
 }
 
 func BenchmarkDefault(b *testing.B) {
@@ -129,34 +141,44 @@ func BenchmarkDefault(b *testing.B) {
 		b.StopTimer()
 	}
 
-	SetDefault(func(o *Options) {
-		o.Name = "default"
-		o.ContextHook = hook
-	})
-	b.Run("default", func(b *testing.B) {
-		b.Run("named", func(b *testing.B) {
-			bench(func() {
-				Named("a").Info("a")
-			})
-		})
-		b.Run("caller", func(b *testing.B) {
-			bench(func() {
-				baseCallerSkip()
-			})
-		})
-		b.Run("context", func(b *testing.B) {
-			bench(func() {
-				WithContext(ctx).Info("default")
-			})
-		})
-	})
+	SetDefault(WithName("default"), WithContextHook(hook))
+	b.Run(
+		"default", func(b *testing.B) {
+			b.Run(
+				"named", func(b *testing.B) {
+					bench(
+						func() {
+							Named("a").Info("a")
+						},
+					)
+				},
+			)
+			b.Run(
+				"caller", func(b *testing.B) {
+					bench(
+						func() {
+							baseCallerSkip()
+						},
+					)
+				},
+			)
+			b.Run(
+				"context", func(b *testing.B) {
+					bench(
+						func() {
+							Context(ctx).Info("default")
+						},
+					)
+				},
+			)
+		},
+	)
 }
 
 // (filewrite)       	     829	   1646762 ns/op	  129959 B/op	    3508 allocs/op
 // (non-filewrite)    	    1686	    820628 ns/op	  103639 B/op	    2304 allocs/op
 //
-//go:generate go test -run Benchmark -test.bench=. -test.benchmem -memprofile=mem.out .
-//go:generate go tool pprof -http :8080 mem.out
+//go:generate go test -run Benchmark -test.bench=. -test.benchmem .
 func Benchmark(b *testing.B) {
 	var count = 100
 	var bench = func(f func()) {
@@ -175,14 +197,12 @@ func Benchmark(b *testing.B) {
 		b.StopTimer()
 	}
 
-	SetDefault(func(o *Options) {
-		o.Name = "default"
-		o.ContextHook = hook
-		o.Writer = filewriter.New()
-	})
+	SetDefault(WithName("default"), WithContextHook(hook))
 
-	bench(func() {
-		Named("a").Info("a")
-		WithContext(ctx).Info("ctx")
-	})
+	bench(
+		func() {
+			Named("a").Info("a")
+			Context(ctx).Info("ctx")
+		},
+	)
 }

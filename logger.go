@@ -5,7 +5,7 @@ import "context"
 var defaultLogger = New()
 
 // SetDefault .
-func SetDefault(opts ...func(o *Options)) {
+func SetDefault(opts ...option) {
 	if defaultLogger != nil {
 		defaultLogger.Flush()
 	}
@@ -17,9 +17,9 @@ func CallerSkip(skip int) *Logger {
 	return defaultLogger.CallerSkip(skip)
 }
 
-// WithContext .
-func WithContext(ctx context.Context) *Logger {
-	return defaultLogger.WithContext(ctx)
+// Context .
+func Context(ctx context.Context) *Logger {
+	return defaultLogger.Context(ctx)
 }
 
 // Named .
