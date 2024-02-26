@@ -91,7 +91,7 @@ func (log *Logger) CallerSkip(skip int) *Logger {
 // Context return new Logger with context
 func (log *Logger) Context(ctx context.Context) *Logger {
 	if log.hook != nil {
-		return log.hook(ctx)(log)
+		return log.Named(log.hook(ctx))
 	}
 	return log
 }

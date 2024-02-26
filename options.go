@@ -13,7 +13,7 @@ const (
 )
 
 // ContextHook return new Logger with context
-type ContextHook func(ctx context.Context) func(l *Logger) *Logger
+type ContextHook func(ctx context.Context) string
 
 // options .
 type options struct {
@@ -25,7 +25,7 @@ type options struct {
 	colourful bool
 	// writer others output
 	writer io.Writer
-	// contextHook return new Logger with context. eg: TestContextHook
+	// contextHook parse name in context. eg: TestContextHook
 	contextHook ContextHook
 	// minlevel convert MinLevel to level
 	minlevel level
@@ -62,8 +62,8 @@ func WithCallerSkip(v int) option {
 	)
 }
 
-// WithColourful .
-func WithColourful() option {
+// WithColorful .
+func WithColorful() option {
 	return funcOption(
 		func(o *options) {
 			o.colourful = true

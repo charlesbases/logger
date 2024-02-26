@@ -7,16 +7,11 @@ import (
 	"time"
 )
 
-var hook ContextHook = func(ctx context.Context) func(l *Logger) *Logger {
-	return func(l *Logger) *Logger {
-		if ctx != context.Background() {
-			return l.Named(ctx.Value("traceid").(string))
-		}
-		return l
-	}
+var hook ContextHook = func(ctx context.Context) string {
+	return ctx.Value("traceid").(string)
 }
 
-var ctx = context.WithValue(context.Background(), "traceid", "1")
+var ctx = context.WithValue(context.Background(), "traceid", "traceid")
 
 // now .
 func now() string {
@@ -176,7 +171,7 @@ func BenchmarkDefault(b *testing.B) {
 }
 
 // (filewrite)       	     829	   1646762 ns/op	  129959 B/op	    3508 allocs/op
-// (non-filewrite)    	    1686	    820628 ns/op	  103639 B/op	    2304 allocs/op
+// (non-filewrite)    	    2824	    451700 ns/op	  102554 B/op	    2206 allocs/op
 //
 //go:generate go test -run Benchmark -test.bench=. -test.benchmem .
 func Benchmark(b *testing.B) {
