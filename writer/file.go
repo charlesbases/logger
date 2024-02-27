@@ -1,4 +1,4 @@
-package filewriter
+package writer
 
 import (
 	"fmt"
@@ -16,8 +16,6 @@ const (
 	defaultFilePermissions = 0666
 	// defaultFolderPermissions default folder prmissions
 	defaultFolderPermissions = 0775
-	// defaultSuffixFormat the date suffix of the log file
-	defaultSuffixFormat = "2006-01-02"
 	// defaultFormatLayou format layou
 	defaultFormatLayou = "2006-01-02 15:04:05.000"
 )
@@ -43,6 +41,16 @@ type fileWriter struct {
 	currentFileExpireAt time.Time
 
 	lock sync.Mutex
+}
+
+// New .
+func New(opts ...Option) io.Writer {
+	if w, err := configuration(opts...).fileWriter(); err != nil {
+		stderr(err)
+		return nil
+	} else {
+		return w
+	}
 }
 
 // Write .
@@ -104,7 +112,9 @@ func (fw *fileWriter) rolling() error {
 
 // rename .
 func (fw *fileWriter) rename(timeSuffix time.Time) error {
-	return os.Rename(fw.fullName, filepath.Join(fw.folderName, strings.Join([]string{fw.fileName, timeString(timeSuffix)}, ".")))
+	return os.Rename(
+		fw.fullName, filepath.Join(fw.folderName, strings.Join([]string{fw.fileName, timeString(timeSuffix)}, ".")),
+	)
 }
 
 // open .
@@ -159,7 +169,7 @@ func (fw *fileWriter) tidy() error {
 		if !entry.IsDir() && len(entry.Name()) != len(fw.fileName) && strings.HasPrefix(entry.Name(), fw.fileName) {
 			if suffix := filepath.Ext(entry.Name()); len(suffix) != 0 {
 				suffix = suffix[1:]
-				if t, err := time.ParseInLocation(defaultSuffixFormat, suffix, fw.currentTime.Location()); err == nil {
+				if t, err := time.ParseInLocation(time.DateOnly, suffix, fw.currentTime.Location()); err == nil {
 					if t.Before(oldest) {
 						os.Remove(filepath.Join(fw.folderName, entry.Name()))
 					}
@@ -170,19 +180,9 @@ func (fw *fileWriter) tidy() error {
 	return nil
 }
 
-// New .
-func New(opts ...func(o *Options)) io.Writer {
-	fileWriter, err := configuration(opts...).fileWriter()
-	if err != nil {
-		stderr(err)
-		return nil
-	}
-	return fileWriter
-}
-
 // timeString .
 func timeString(t time.Time) string {
-	return t.Format(defaultSuffixFormat)
+	return t.Format(time.DateOnly)
 }
 
 // timeMidnight 零点时间
@@ -192,9 +192,7 @@ func timeMidnight(t time.Time, offset int) time.Time {
 
 // stderr .
 func stderr(err error) {
-	if err != nil {
-		fmt.Printf("[%s] \033[31mERR\033[0m %s %v\n", time.Now().Format(defaultFormatLayou), caller(), err)
-	}
+	fmt.Printf("[%s] ERR %s %v\n", time.Now().Format(defaultFormatLayou), caller(), err)
 }
 
 // caller .

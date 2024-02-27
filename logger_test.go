@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/charlesbases/logger/writer"
 )
 
 var hook ContextHook = func(ctx context.Context) string {
@@ -191,7 +193,7 @@ func Benchmark(b *testing.B) {
 		b.StopTimer()
 	}
 
-	SetDefault(WithName("default"), WithContextHook(hook), WithColorful())
+	SetDefault(WithName("default"), WithContextHook(hook), WithWriter(writer.New()))
 
 	bench(
 		func() {
