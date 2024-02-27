@@ -5,8 +5,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/charlesbases/logger/writer"
 )
 
 var hook ContextHook = func(ctx context.Context) string {
@@ -173,7 +171,7 @@ func BenchmarkDefault(b *testing.B) {
 }
 
 // (filewrite)       	     829	   1646762 ns/op	  129959 B/op	    3508 allocs/op
-// (non-filewrite)    	    2824	    451700 ns/op	  102554 B/op	    2206 allocs/op
+// (non-filewrite)    	     100	    736730 ns/op	  104822 B/op	    2306 allocs/op
 //
 func Benchmark(b *testing.B) {
 	var count = 100
@@ -193,7 +191,8 @@ func Benchmark(b *testing.B) {
 		b.StopTimer()
 	}
 
-	SetDefault(WithName("default"), WithContextHook(hook), WithWriter(writer.New()))
+	SetDefault(WithName("default"), WithContextHook(hook))
+	// SetDefault(WithName("default"), WithContextHook(hook), WithWriter(writer.New()))
 
 	bench(
 		func() {
