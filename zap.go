@@ -39,25 +39,29 @@ func New(opts ...option) *Logger {
 	encodercfg := zap.NewProductionEncoderConfig()
 	encodercfg.EncodeTime = zapcore.TimeEncoderOfLayout(wrap(defaultDateFormat))
 	encodercfg.EncodeLevel = func(level zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
-		encoder.AppendString(shortName(level)(options.colourful))
+		encoder.AppendString(options.levelEncoder(level))
 	}
 	encodercfg.EncodeCaller = zapcore.ShortCallerEncoder
 	encodercfg.ConsoleSeparator = " "
 	encoder := zapcore.NewConsoleEncoder(encodercfg)
 
 	// 日志级别
-	level := zap.LevelEnablerFunc(
-		func(lv zapcore.Level) bool {
-			return level(lv) >= options.minlevel
+	levelEnablerFunc := zap.LevelEnablerFunc(
+		func(v zapcore.Level) bool {
+			return v >= options.minlevel
 		},
 	)
 
 	// output-console
-	core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level)
+	core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), levelEnablerFunc)
 
 	// output-writer
 	if options.writer != nil {
-		core = zapcore.NewTee([]zapcore.Core{core, zapcore.NewCore(encoder, zapcore.AddSync(options.writer), level)}...)
+		core = zapcore.NewTee(
+			[]zapcore.Core{
+				core, zapcore.NewCore(encoder, zapcore.AddSync(options.writer), levelEnablerFunc),
+			}...,
+		)
 	}
 
 	sugared := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(options.callerSkip)).Sugar()

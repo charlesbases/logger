@@ -5,47 +5,50 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type level int8
-
-const (
-	debugLevel level = iota - 1
-	infoLevel
-	warnLevel
-	errorLevel
-	fatalLevel
-
-	minlevel = debugLevel
+var (
+	debugEncoder   = newEncoder("DBG", colors.PurpleSprint)
+	infoEncoder    = newEncoder("INF", colors.GreenSprint)
+	warnEncoder    = newEncoder("WRN", colors.BlueSprint)
+	errorEncoder   = newEncoder("ERR", colors.RedSprint)
+	fatalEncoder   = newEncoder("FAT", colors.RedSprint)
+	unknownEncoder = newEncoder("UNK", colors.WhiteSprint)
 )
 
-var renderFunc = func(s string, sf func(v ...interface{}) string) func(b bool) string {
-	return func(b bool) string {
-		if b {
-			return sf(s)
-		}
-		return s
+// levelEncoder .
+type levelEncoder struct {
+	origin   string
+	colorful string
+}
+
+// newEncoder .
+func newEncoder(origin string, encoder func(a ...interface{}) string) *levelEncoder {
+	return &levelEncoder{origin: origin, colorful: encoder(origin)}
+}
+
+// getEncoder .
+func getEncoder(code zapcore.Level) *levelEncoder {
+	switch code {
+	case zapcore.DebugLevel:
+		return debugEncoder
+	case zapcore.InfoLevel:
+		return infoEncoder
+	case zapcore.WarnLevel:
+		return warnEncoder
+	case zapcore.ErrorLevel:
+		return errorEncoder
+	case zapcore.FatalLevel:
+		return fatalEncoder
+	default:
+		return unknownEncoder
 	}
 }
 
-var render = map[zapcore.Level]func(b bool) string{
-	zapcore.DebugLevel: renderFunc("DBG", colors.PurpleSprint),
-	zapcore.InfoLevel:  renderFunc("INF", colors.GreenSprint),
-	zapcore.WarnLevel:  renderFunc("WRN", colors.BlueSprint),
-	zapcore.ErrorLevel: renderFunc("ERR", colors.RedSprint),
-	zapcore.FatalLevel: renderFunc("FAT", colors.RedSprint),
+// originEncoder .
+func originEncoder(code zapcore.Level) string {
+	return getEncoder(code).origin
 }
 
-var string2level = map[string]level{
-	"debug": debugLevel,
-	"info":  infoLevel,
-	"warn":  warnLevel,
-	"error": errorLevel,
-	"fatal": fatalLevel,
-}
-
-// shortName .
-func shortName(zl zapcore.Level) func(b bool) string {
-	if fn, found := render[zl]; found {
-		return fn
-	}
-	return renderFunc("UNK", colors.RedSprint)
+// colorfulEncoder .
+func colorfulEncoder(code zapcore.Level) string {
+	return getEncoder(code).colorful
 }

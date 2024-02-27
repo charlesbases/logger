@@ -3,6 +3,8 @@ package logger
 import (
 	"context"
 	"io"
+
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -21,14 +23,14 @@ type options struct {
 	name string
 	// callerSkip 跳过的调用者数量
 	callerSkip int
-	// colourful 日志级别多彩显示
-	colourful bool
+	// levelEncoder .
+	levelEncoder func(code zapcore.Level) string
 	// writer others output
 	writer io.Writer
 	// contextHook parse name in context. eg: TestContextHook
 	contextHook ContextHook
-	// minlevel convert MinLevel to level
-	minlevel level
+	// minlevel convert MinLevel to levelEncoder
+	minlevel zapcore.Level
 }
 
 // option .
@@ -66,7 +68,7 @@ func WithCallerSkip(v int) option {
 func WithColorful() option {
 	return funcOption(
 		func(o *options) {
-			o.colourful = true
+			o.levelEncoder = colorfulEncoder
 		},
 	)
 }
@@ -75,9 +77,20 @@ func WithColorful() option {
 func WithMinLevel(v string) option {
 	return funcOption(
 		func(o *options) {
-			if minlevel, found := string2level[v]; found {
-				o.minlevel = minlevel
+			minlevel := zapcore.DebugLevel
+			switch v {
+			case "debug":
+				minlevel = zapcore.DebugLevel
+			case "info":
+				minlevel = zapcore.InfoLevel
+			case "warn":
+				minlevel = zapcore.WarnLevel
+			case "error":
+				minlevel = zapcore.ErrorLevel
+			case "fatal":
+				minlevel = zapcore.FatalLevel
 			}
+			o.minlevel = minlevel
 		},
 	)
 }
@@ -102,7 +115,11 @@ func WithContextHook(hook ContextHook) option {
 
 // configuration .
 func configuration(opts ...option) *options {
-	var options = &options{callerSkip: defaultCallerSkip, minlevel: minlevel}
+	var options = &options{
+		callerSkip:   defaultCallerSkip,
+		levelEncoder: originEncoder,
+		minlevel:     zapcore.DebugLevel,
+	}
 	for _, opt := range opts {
 		opt.apply(options)
 	}

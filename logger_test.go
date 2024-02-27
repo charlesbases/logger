@@ -29,7 +29,7 @@ func loggerCallerSkip(log *Logger) {
 }
 
 func TestContextHook(t *testing.T) {
-	SetDefault(WithName("default"), WithContextHook(hook))
+	SetDefault(WithName("default"), WithContextHook(hook), WithColorful())
 	Context(ctx).Info("ctx")
 }
 
@@ -173,7 +173,6 @@ func BenchmarkDefault(b *testing.B) {
 // (filewrite)       	     829	   1646762 ns/op	  129959 B/op	    3508 allocs/op
 // (non-filewrite)    	    2824	    451700 ns/op	  102554 B/op	    2206 allocs/op
 //
-//go:generate go test -run Benchmark -test.bench=. -test.benchmem .
 func Benchmark(b *testing.B) {
 	var count = 100
 	var bench = func(f func()) {
@@ -192,12 +191,12 @@ func Benchmark(b *testing.B) {
 		b.StopTimer()
 	}
 
-	SetDefault(WithName("default"), WithContextHook(hook))
+	SetDefault(WithName("default"), WithContextHook(hook), WithColorful())
 
 	bench(
 		func() {
 			Named("a").Info("a")
-			Context(ctx).Info("ctx")
+			Context(ctx).Error("ctx")
 		},
 	)
 }
