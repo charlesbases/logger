@@ -11,7 +11,7 @@ const (
 	// defaultCallerSkip .
 	defaultCallerSkip = 1
 	// defaultDateFormat date format
-	defaultDateFormat = "2006-01-02 15:04:05.000"
+	defaultDateFormat = "2006-01-02 15:04:05.000 Z07:00"
 )
 
 // ContextHook return new Logger with context

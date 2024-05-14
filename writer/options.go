@@ -9,7 +9,7 @@ const (
 	// defaultMaxRolls 日志保留时间
 	defaultMaxRolls = 7
 	// defaultFilePath default file path
-	defaultFilePath = "./logs/log"
+	defaultFilePath = "./log/log"
 )
 
 // Option .
