@@ -34,7 +34,8 @@ type zapLogger struct {
 //
 // 示例:
 //   logger := New(
-//       WithName("myapp"),
+//       WithCallerSkip(1),
+//       WithName("app"),
 //       WithWriter(os.Stdout, fileWriter),
 //       WithColorful(false),
 //       WithMinLevel("debug"),

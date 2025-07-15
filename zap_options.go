@@ -57,6 +57,12 @@ func WithColorful(b bool) Option {
 	}
 }
 
+func WithCallerSkip(skip int) Option {
+	return func(l *zapLogger) {
+		l.callerSkip = skip
+	}
+}
+
 // WithMinLevel 设置最低日志级别选项
 //
 // 参数:
